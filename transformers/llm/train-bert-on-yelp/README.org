@@ -1,0 +1,92 @@
+* Running Huggingface train for Bert with Yelp dataset
+
+- Go to https://huggingface.co/docs/transformers/training
+
+- Click "Open in Colab", select "mixed". Colab 
+
+- This opens the whole article in Google Colab. Each piece of code is a cell.
+
+- The cell sections are as follows:
+
+  - Top: 'pip install transformers datasets'
+    - Only this line runs
+  - Fine-tune a pretrained model
+    1. Prepare a dataset
+    2. Train (no code)
+    3. Train with PyTorch Trainer
+    4. Train a TensorFlow model with Keras
+    5. Train in native PyTorch
+
+  - We will ONLY run 1,3: 'Prepare a dataset', and 'Train with Pytorch Trainer'
+
+    1. Prepare a dataset
+       - The 'tokenize' section takes about 10 minutes
+         #+begin_src python
+           tokenized_datasets = dataset.map(tokenize_function, batched=True)
+         #+end_src
+
+       - The 'tokenized_datasets' instance is DatasetDict, contains 2 Dataset instances, probably large
+       - Small datasets:
+         #+begin_src python
+           small_train_dataset = tokenized_datasets["train"].shuffle(seed=42).select(range(1000))
+           small_eval_dataset = tokenized_datasets["test"].shuffle(seed=42).select(range(1000))
+           print(small_eval_dataset)
+           print(small_eval_dataset.data[0][1:3]) # label (0-5)
+           print(small_eval_dataset.data[1][1:3]) # text of review
+         #+end_src
+         - Result:
+           #+begin_example
+             small_train_dataset = tokenized_datasets["train"].shuffle(seed=42).select(range(1000))
+             small_eval_dataset = tokenized_datasets["test"].shuffle(seed=42).select(range(1000))
+             print(small_eval_dataset)
+             print(small_eval_dataset.data[0][1:3]) # label (0-5)
+             print(small_eval_dataset.data[1][1:3]) # text of review
+
+           #+end_example
+         - The 'small_train_dataset' and 'small_eval_dataset' instances are of type Dataset
+
+    2. Train with PyTorch Trainer
+       - Import Model class and create model, defining only the features from above.
+         #+begin_src python
+           from transformers import AutoModelForSequenceClassification
+
+           model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=5) # labels correspond to 5 Dataset features: ['label', 'text', 'input_ids', 'token_type_ids', 'attention_mask'],
+         #+end_src
+       - The 'model' instance has tensors, about 400M! This must be the Bert model already trained, that is why so large
+       - Training hyperparameters
+         - This section uses default 'hyperparameters'
+
+
+* Running Locally
+
+** For local runnning, I use python virtual environment ~/software/python/venv3.11~
+
+- cd this directory
+- source \~/software/python/venv3.11/bin/activate
+- 
+
+           
+
+* Useful linux and python commands for AI
+
+** Synchronize
+
+rsync --dry-run --verbose --mkpath --archive /home/mzimmermann/dev/my-projects-source/public-on-github/ai mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github
+
+
+** Find and change VRAM used by GPU
+
+# Find memory (vram) aveilable to AMG GPU
+lspci -D # Find line that looks like graphics, e.g. "0000:03:00.0 VGA compatible controller: ..."
+cat /sys/bus/pci/devices/0000:03:00.0/mem_info_vram_total # Shows total VRAM size
+
+# Another way
+glxinfo | egrep -i 'device|memory'
+
+See this topic:
+
+https://bbs.archlinux.org/viewtopic.php?id=283308
+
+which explains to use AMD tool to change VRAM in BIOS
+  
+  
