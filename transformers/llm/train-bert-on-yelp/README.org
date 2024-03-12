@@ -1,3 +1,8 @@
+* TL;DR for this project, once everything is installed
+
+jupyter-lab train-bert-on-yelp-local.ipynb : Start notebook
+
+
 * Running Huggingface train for Bert with Yelp dataset
 
 - Go to https://huggingface.co/docs/transformers/training
@@ -71,6 +76,10 @@
 
 ** Synchronize
 
+On server, synchronize the 'ai' directory to laptop
+# rsync the "ai" directory from server to laptop
+# remove the --dry-run
+
 rsync --dry-run --verbose --mkpath --archive /home/mzimmermann/dev/my-projects-source/public-on-github/ai mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github
 
 
@@ -90,3 +99,4 @@ https://bbs.archlinux.org/viewtopic.php?id=283308
 which explains to use AMD tool to change VRAM in BIOS
   
   
+

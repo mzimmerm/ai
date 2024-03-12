@@ -1,0 +1,13 @@
+Fix evaluate for Python 3.6
+
+#
+# evaluate : Leap on Python 3.6: ERROR: No matching distribution found for evaluate,
+#   because evaluate requires Python>=3.7 and huggingface>=0.7.0. See pypi.
+# Mocked it and fixed it by downloading evaluate-0.4.1.zip to ~/Downloads, unziped
+#   edited setup.py in unziped, set python_requires>=3.7 and HF 0.4.0 ,
+#   then ran 'pip install evaluate-0.4.1/' from the ~/Downloads directory.
+#   That installed evaluate to site-packages in the venv, but I still needed to edit __init__.py
+#   in site-packages/evaluate/__init__.py and remove # mz removed from .hub import push_to_hub
+#   After that, restarted kernel, and 'evaluate' started to work.
+
+# The changed files are kept in this directory.
