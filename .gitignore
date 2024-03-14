@@ -1,3 +1,4 @@
 .emacs.desktop
-HUGE-NO-BACKUP
+*-NO-BACKUP
+*-MANUAL-BACKUP
 .ipynb_checkpoints
