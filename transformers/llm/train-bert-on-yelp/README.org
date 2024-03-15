@@ -86,17 +86,33 @@ rsync --dry-run --verbose --mkpath --archive /home/mzimmermann/dev/my-projects-s
 ** Find and change VRAM used by GPU
 
 # Find memory (vram) aveilable to AMG GPU
-lspci -D # Find line that looks like graphics, e.g. "0000:03:00.0 VGA compatible controller: ..."
+lspci -D # Find line that looks like graphics, e.g. "0000:03:00.0 VGA
+compatible controller: ..."
+# Then run 
 cat /sys/bus/pci/devices/0000:03:00.0/mem_info_vram_total # Shows total VRAM size
 
 # Another way
 glxinfo | egrep -i 'device|memory'
 
+AFTER rocm install:
+localhost:~ # glxinfo | egrep -i 'device|memory'
+    Device: llvmpipe (LLVM 15.0.7, 256 bits) (0xffffffff)
+    Video memory: 14875MB
+    Unified memory: yes
+    GL_AMD_multi_draw_indirect, GL_AMD_pinned_memory, 
+    GL_EXT_framebuffer_object, GL_EXT_framebuffer_sRGB, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_packed_depth_stencil, GL_EXT_packed_float, 
+    GL_AMD_pinned_memory, GL_AMD_query_buffer_object, 
+    GL_EXT_gpu_program_parameters, GL_EXT_gpu_shader4, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
+    GL_EXT_map_buffer_range, GL_EXT_memory_object, GL_EXT_memory_object_fd, 
+
 See this topic:
 
 https://bbs.archlinux.org/viewtopic.php?id=283308
 
-which explains to use AMD tool to change VRAM in BIOS
+which explains to use AMD tool to change VRAM in BIOS. BUT with ROCm
+installed, it appears all memory is available for video
   
   
 
@@ -123,6 +139,8 @@ A bug report to support ROCm on 4-year old Renoir GPUs is closed with
 https://github.com/ROCm/ROCm/issues/1101. Not exactly a vote of confidence.
 
 
+** Installing ROCm on Linux
+
 Presumably (obviously) one does have to install ROCm software and drivers on their system to run ML
 efficiently. AMD's documentation of is confusing, it is not clear where to start, we have
 
@@ -133,9 +151,14 @@ efficiently. AMD's documentation of is confusing, it is not clear where to start
 5. todo: add lmstudio links, explain differences.
 
 
-Deeper in the second link,
+Look-ahead note: After looking into the instructions, there are two distinct
+elements: Something called "amdgpu" and "rocm". It appears that AMD uses the
+term "amdgpu" when it refers to the whole package. "rocm" seems to be the name
+of the kernel driver, so it is a "part of" the "amdgpu" package.
+
+Deeper in the second link, we find 
 https://rocm.docs.amd.com/projects/install-on-linux/en/latest/tutorial/quick-start.html
-offers two methods of installing ROCm on Linux
+which offers two methods of installing ROCm on Linux.
 
 - Native package manager
 - AMDGPU installer
@@ -149,10 +172,11 @@ distros.
 The installer needs to be executed, the native package installation requires a
 few more manual steps to install the driver.  In line with the AMD's ROCm
 confusion, it is not clear why there are two methods, which is better or
-preferred and what are the differences.
+preferred and what are the differences between them.
 
-I am using the "Native package manager" approach on SuSE Leap 15.5. I know, Leap !=
-SLE, but here are the instructions:
+In my installation, I am using the "Native package manager" approach on SuSE Leap 15.5. I know, Leap !=
+SLE, but they should be interchangeable, and the process worked, as you can
+see if you keep reading. These are the installation steps from https://rocm.docs.amd.com/projects/install-on-linux/en/latest/tutorial/quick-start.html#suse-linux-enterprise-server:
 
 ----
 sudo zypper addrepo https://download.opensuse.org/repositories/devel:languages:perl/SLE_15_SP5/devel:languages:perl.repo
@@ -169,3 +193,61 @@ echo "Please reboot system for all settings to take effect."
 The above steps ran with no error on OpenSUSe Leap 15.5.
 
 Rebooted the system.
+
+todo improve: Added latest-2,latest-3 to /etc/zypp/zypp.conf
+
+
+** Validating ROCm installation
+
+After the above installation of ROCm (amdgpu) todo check if it worked and how
+
+
+AFTER rocm install:
+localhost:~ # glxinfo | egrep -i 'device|memory'
+    Device: llvmpipe (LLVM 15.0.7, 256 bits) (0xffffffff)
+    Video memory: 14875MB
+    Unified memory: yes
+    GL_AMD_multi_draw_indirect, GL_AMD_pinned_memory, 
+    GL_EXT_framebuffer_object, GL_EXT_framebuffer_sRGB, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_packed_depth_stencil, GL_EXT_packed_float, 
+    GL_AMD_pinned_memory, GL_AMD_query_buffer_object, 
+    GL_EXT_gpu_program_parameters, GL_EXT_gpu_shader4, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
+    GL_EXT_map_buffer_range, GL_EXT_memory_object, GL_EXT_memory_object_fd, 
+
+it appears all memory is available for video
+
+BUT
+> rocminfo
+ROCk module is NOT loaded, possibly no GPU devices
+
+So it appears rocm was not installed?? todo what does it mean??
+
+#> dmesg | grep kfd
+no output
+
+#> dmesg | grep rocm
+no output
+
+So I did:
+
+zypper in amdgpu # this is not in instructions todo- explain
+
+** Installing PyTorch that works with ROCm
+
+Pytorch is a Python package for ML. As a reasonably complex Python package, it
+will only work on certain Python versions. The default Python
+of SLE 15 and OpenSuse Leap 15.5 is Python 3.6. So we have to install Pytorch
+that works with Python 3.6. There is a site which allows to
+select operating system, language, package, and platform (CUDA or ROCm), and
+download PyTorch for the selected version. The site is
+https://pytorch.org/get-started/locally/. Problem is, it says it only works on
+Python 3.8 or higher - while SLE 15 and OpenSuse Leap 15.5 only support Python
+3.6. How do we solve this??? todo 
+
+
+
+
+** todo Addendums
+
+*** todo CUDA CUDA, which stands for Compute Unified Device Architecture, is a parallel computing platform and programming model developed by NVIDIA
