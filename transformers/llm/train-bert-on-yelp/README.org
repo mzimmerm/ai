@@ -100,3 +100,72 @@ which explains to use AMD tool to change VRAM in BIOS
   
   
 
+
+
+* Install ROCm on Linux, for AMD Ryzen APUs
+
+I have AMD APU Ryzen 5 2500U.
+
+This text is only concerned with Linux running AMD software for iGPU (GPU
+integrated in APU).
+
+AMD was late in software support for their APUs and GPUs to run machine
+learning (ML) training. Simplifying, we can say that the Python PyTorch
+package is the standard way to run ML algorithms. While PyTorch can run on
+both CPU and GPU, only GPU processing is reasonably performant. GPU processing
+needs support from low level software on the GPU. AMD's GPU low level software
+is ROCm. todo: how does AMD describe ROCm? ROCm, officially supports a 
+miniscule number of discrete video cards; it does not officially support any
+iGPU, see
+https://rocm.docs.amd.com/projects/radeon/en/latest/docs/compatibility.html. 
+A bug report to support ROCm on 4-year old Renoir GPUs is closed with
+(paraphrasing) "not supported, some have success running it", see
+https://github.com/ROCm/ROCm/issues/1101. Not exactly a vote of confidence.
+
+
+Presumably (obviously) one does have to install ROCm software and drivers on their system to run ML
+efficiently. AMD's documentation of is confusing, it is not clear where to start, we have
+
+1. https://rocm.docs.amd.com/projects/radeon/en/latest/index.html
+2. https://rocm.docs.amd.com/en/latest/
+3. https://www.amd.com/en/support/linux-drivers
+4. https://community.amd.com/t5/ai/amd-extends-support-for-pytorch-machine-learning-development-on/ba-p/637756
+5. todo: add lmstudio links, explain differences.
+
+
+Deeper in the second link,
+https://rocm.docs.amd.com/projects/install-on-linux/en/latest/tutorial/quick-start.html
+offers two methods of installing ROCm on Linux
+
+- Native package manager
+- AMDGPU installer
+
+Native package manager is a Linux-distro specific package, offered for Debian,
+RedHat, and SuSE's SLE.
+
+AMDGPU installer is also a Linux-distro specific package, offered for the same
+distros.
+
+The installer needs to be executed, the native package installation requires a
+few more manual steps to install the driver.  In line with the AMD's ROCm
+confusion, it is not clear why there are two methods, which is better or
+preferred and what are the differences.
+
+I am using the "Native package manager" approach on SuSE Leap 15.5. I know, Leap !=
+SLE, but here are the instructions:
+
+----
+sudo zypper addrepo https://download.opensuse.org/repositories/devel:languages:perl/SLE_15_SP5/devel:languages:perl.repo
+sudo zypper install kernel-default-devel
+# See prerequisites. Adding current user to Video and Render groups
+sudo usermod -a -G render,video $LOGNAME
+sudo zypper --no-gpg-checks install https://repo.radeon.com/amdgpu-install/6.0.2/sle/15.5/amdgpu-install-6.0.60002-1.noarch.rpm
+sudo zypper refresh
+sudo zypper install amdgpu-dkms
+sudo zypper install rocm
+echo "Please reboot system for all settings to take effect."
+----
+
+The above steps ran with no error on OpenSUSe Leap 15.5.
+
+Rebooted the system.
