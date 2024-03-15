@@ -231,7 +231,98 @@ no output
 
 So I did:
 
-zypper in amdgpu # this is not in instructions todo- explain
+zypper in amdgpu # this is not in instructions todo- explain.
+
+But it did not help
+
+mv /etc/modprobe.d/blacklist-radeon.conf ~/tmp
+
+modprobe amdgpu
+modprobe: ERROR: could not insert 'amdgpu': Key was rejected by service
+
+todo: this seems important:
+
+localhost:/etc/modprobe.d # modprobe rocm
+modprobe: FATAL: Module rocm not found in directory /lib/modules/5.14.21-150500.55.52-default
+
+#> sudo modinfo amdgpu
+shows some massive amount of stuff. maybe this is a path??
+
+als
+
+#> sudo modprobe -vvr amdgpu
+
+#> mzimmermann@localhost:~/tmp> sudo modprobe -vv amdgpu
+modprobe: INFO: custom logging function 0x55a45ae0d260 registered
+insmod /lib/modules/5.14.21-150500.55.52-default/updates/amdkcl.ko.zst 
+modprobe: INFO: Failed to insert module '/lib/modules/5.14.21-150500.55.52-default/updates/amdkcl.ko.zst': Key was rejected by service
+modprobe: ERROR: could not insert 'amdgpu': Key was rejected by service
+modprobe: INFO: context 0x55a45b3ad440 released
+
+
+so going after amdkcl.ko
+this has someting to do with secure boot - should be disabled
+
+sudo mokutil --sb-state
+SecureBoot enabled
+
+So try to disable it???
+
+From https://github.com/linux-surface/linux-surface/issues/906 it looks like
+installing ssl could install a secure boot key, which fixes the problem??
+
+According to the DKMS github page, on most distro, the key pair is located at /var/lib/dkms/[mok.key & mok.pub]. If the file is not present, it will generate one using openssl package.
+
+On Ubuntu though, it will be configured to use the Ubuntu master key, which is
+located in: /var/lib/shim-signed/mok/MOK.der and
+/var/lib/shim-signed/mok/MOK.priv which is generated and enrolled when you
+first install Ubuntu, where it will automatically configure SecureBoot.
+
+So I did:
+
+Yast->bootloader, uncheck "secure boot support"
+reboot
+THE ABOVE ALMOST FIXED IT, BUT SYSTEM DID NOT BOOT. I HAD TO ADD A PASSWORD TO
+BIOS, THEN DISABLE SECURE BOOT IN BIOS.
+
+AFTER REBOOT, rocm and amdgpu loaded:
+
+localhost:~ # rocminfo | grep gfx
+  Name:                    gfx902                             
+      Name:                    amdgcn-amd-amdhsa--gfx902:xnack+   
+
+
+localhost:~ # modprobe -vv amdgpu
+modprobe: INFO: custom logging function 0x5604f440d260 registered
+modprobe: INFO: context 0x5604f5db1690 released
+
+
+Running a script that tests everything rocm. The script is mentioned in
+https://github.com/ROCm/ROCm/issues/2216 and is here:
+https://gist.github.com/damico/484f7b0a148a0c5f707054cf9c0a0533
+
+Save the script as, for example  misc/test-rocm.py and run
+
+
+- source ~/software/python/venv3.6-for-ai-rocm/bin/activate
+- python misc/test-rocm.py
+
+  (venv3.6-for-ai-rocm) mzimmermann@localhost:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp> python misc/test-rocm.py
+
+
+Checking ROCM support...
+GOOD: ROCM devices found:  2
+Checking PyTorch...
+GOOD: PyTorch is working fine.
+Checking user groups...
+GOOD: The user mzimmermann is in RENDER and VIDEO groups.
+BAD: PyTorch ROCM support NOT found.
+
+  
+So ROCM is found, PyTorch works, but it does not have ROCm support.
+
+That means , we have to install PyTorch that works with ROCm. This is done in
+the next step
 
 ** Installing PyTorch that works with ROCm
 
