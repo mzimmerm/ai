@@ -1,5 +1,6 @@
 # From https://gist.github.com/damico/484f7b0a148a0c5f707054cf9c0a0533
 import torch, grp, pwd, os, subprocess
+import numpy as np
 import getpass
 devices = []
 try:
@@ -48,7 +49,17 @@ try:
 
 	if torch.cuda.is_available():
 		print("GOOD: PyTorch ROCM support found.")
-		t = torch.tensor([5, 5, 5], dtype=torch.int64, device='cuda')
+
+                torch.zeros([2, 4], dtype=torch.int32)
+                torch.tensor(np.array([[1, 2, 3], [4, 5, 6]]))
+                x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+                print(x[1][2])
+                x = torch.tensor([[1]])
+                x
+                cuda0 = torch.device('cuda:0')
+                torch.ones([2, 4], dtype=torch.float64, device=cuda0)
+                
+                t = torch.tensor([5, 5, 5], dtype=torch.int64, device=cuda0)
 		print('Testing PyTorch ROCM support...')
 		if str(t) == "tensor([5, 5, 5], device='cuda:0')":
 			print('Everything fine! You can run PyTorch code inside of: ')
