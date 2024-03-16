@@ -662,3 +662,52 @@ For completeness, run a script that tests both rocm and pytorch installation and
 
 Great. PyTorch works with ROCm on an old Ryzen 5 2500U!! This concludes our endeavor. 
 
+
+
+* Script to fully uninstall and reinstall ROCm (amdgpu) and PyTorch
+
+----
+sudo zypper addrepo https://download.opensuse.org/repositories/devel:languages:perl/SLE_15_SP5/devel:languages:perl.repo
+sudo zypper install kernel-default-devel
+# See prerequisites. Adding current user to Video and Render groups
+sudo usermod -a -G render,video $LOGNAME
+sudo zypper --no-gpg-checks install https://repo.radeon.com/amdgpu-install/6.0.2/sle/15.5/amdgpu-install-6.0.60002-1.noarch.rpm
+sudo zypper refresh
+sudo zypper install amdgpu-dkms
+sudo zypper install rocm
+echo "Please reboot system for all settings to take effect."
+----
+
+
+sudo amdgpu-install --uninstall
+sudo zypper removerepo "amdgpu"
+sudo zypper removerepo "amdgpu-src"
+sudo zypper removerepo "amdgpu-proprietary"
+sudo zypper removerepo "rocm"
+
+# The amdgpu-install version AMDGPU_ROCM_RPM amdgpu-install-6.0.60002 is version of ROCm
+# The ROCm version must match the version in ROCM_TORCH_WHL - rocm6.0
+# The "cp310" in ROCM_TORCH_WHL describes Python 3.10 
+AMDGPU_ROCM_RPM=https://repo.radeon.com/amdgpu-install/6.0.2/sle/15.5/amdgpu-install-6.0.60002-1.noarch.rpm
+# AMDGPU_ROCM_RPM=https://repo.radeon.com/amdgpu-install/5.5.2/sle/15.4/amdgpu-install-5.5.50502-1.noarch.rpm
+
+# Install ROCm from RPM
+sudo zypper --no-gpg-checks install $AMDGPU_ROCM_RPM
+sudo amdgpu-install --usecase=graphics,rocm
+
+reboot
+
+read
+
+# Make sure to use 3.10
+ML_PROJECT=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
+cd $ML_PROJECT
+
+# ROCM_TORCH_WHL=https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/torch-2.1.2+rocm6.0-cp310-cp310-linux_x86_64.whl
+
+# Alternative for ROCM_TORCH_WHL is to specify nithgtly torch builds; they have
+# WHL files for rocm6.0-cp310. Those seem to be automatically selected when we specify simply:
+ROCM_TORCH_WHL=https://download.pytorch.org/whl/nightly/rocm6.0
+
+# Install Torch from nightly wheel files.
+pip3 install --pre torch torchvision torchaudio --index-url $ROCM_TORCH_WHL
