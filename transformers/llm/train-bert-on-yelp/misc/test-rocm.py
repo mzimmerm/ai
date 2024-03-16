@@ -58,7 +58,9 @@ try:
                 x = torch.tensor([[1]])
                 print(x)
                 cuda0 = torch.device('cuda:0')
+                print('Problematic line next ...')
                 print(torch.ones([2, 4], dtype=torch.float64, device=cuda0))
+                print('WOW, NO PROBLEM')
                 #Traceback (most recent call last):
                 #  File "<stdin>", line 1, in <module>
                 #RuntimeError: HIP error: shared object initialization failed

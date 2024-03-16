@@ -748,4 +748,81 @@ cd $ML_PROJECT
 ROCM_TORCH_WHL=https://download.pytorch.org/whl/nightly/rocm6.0
 
 # Install Torch from nightly wheel files.
-pip3 install --pre torch torchvision torchaudio --index-url $ROCM_TORCH_WHL
+cd HUGE-NO-BACKUP
+pip3 install --force-reinstall --pre torch torchvision torchaudio --index-url $ROCM_TORCH_WHL
+
+
+
+
+============================
+
+
+After the above installation of ROCm (amdgpu) todo check if it worked and how
+
+
+AFTER rocm install:
+localhost:~ # glxinfo | egrep -i 'device|memory'
+    Device: llvmpipe (LLVM 15.0.7, 256 bits) (0xffffffff)
+    Video memory: 14875MB
+    Unified memory: yes
+    GL_AMD_multi_draw_indirect, GL_AMD_pinned_memory, 
+    GL_EXT_framebuffer_object, GL_EXT_framebuffer_sRGB, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_packed_depth_stencil, GL_EXT_packed_float, 
+    GL_AMD_pinned_memory, GL_AMD_query_buffer_object, 
+    GL_EXT_gpu_program_parameters, GL_EXT_gpu_shader4, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
+    GL_EXT_map_buffer_range, GL_EXT_memory_object, GL_EXT_memory_object_fd, 
+
+
+> rocminfo
+
+#> dmesg | grep kfd
+
+#> dmesg | grep rocm
+
+#> sudo modprobe -vvr amdgpu
+
+#> mzimmermann@localhost:~/tmp> sudo modprobe -vv amdgpu
+
+AFTER REBOOT, rocm and amdgpu loaded:
+
+localhost:~ # rocminfo | grep gfx
+  Name:                    gfx902                             
+      Name:                    amdgcn-amd-amdhsa--gfx902:xnack+   
+
+
+
+============ NO LUCK - TRY REBUILD PYTORCH FROM GIT AS SUGGESTED HERE
+
+https://github.com/ROCm/ROCm/issues/1743
+
+Here is a workaround to run pytorch on gfx90c.
+Just build pytorch for gfx900 and override gfx90c to gfx900.
+
+# Build pytorch
+git clone https://github.com/pytorch/pytorch.git  
+cd pytorch  
+git submodule update --init --recursive
+pip3 install -r requirements.txt
+pip3 install enum34 numpy pyyaml setuptools typing cffi future hypothesis typing_extensions
+python3 tools/amd_build/build_amd.py
+PYTORCH_ROCM_ARCH=gfx900 USE_ROCM=1 MAX_JOBS=4 python3 setup.py install
+
+# Run an example
+git clone https://github.com/pytorch/examples.git
+cd examples/mnist
+pip3 install -r requirements.txt
+HSA_OVERRIDE_GFX_VERSION=9.0.0 python3 main.py
+
+ the above failed *THIS BUILD OK BUT FAILED - HSA_STATUS_ERROR_MEMORY_APERTURE_VIOLATION*
+
+AMD_LOG_LEVEL=5 HSA_OVERRIDE_GFX_VERSION=9.0.0 python
+
+
+=========================  TRY TO DISABLE SOME THINGS IN HARDWARE GPU
+
+According to https://github.com/ROCm/ROCm/issues/1743#issuecomment-1149902796
+sudo modprobe amdgpu ppfeaturemask=0xfff73fff
+
+
+======================== TRY TO FIND THE NOTE ABOUT
