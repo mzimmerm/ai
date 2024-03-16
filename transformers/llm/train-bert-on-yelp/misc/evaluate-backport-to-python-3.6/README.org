@@ -1,4 +1,10 @@
-Fix evaluate for Python 3.6
+Evaluate is a package required by Huggingface setting of error epsilon values.
+
+Evaluate requires Python 3.7, but Leap only has Python 3.6. 
+
+This directory shows how to make evaluate run on 3.6
+
+As of March 16, 2024 THIS DIRECTORY IS NO LONGER NEEDED. WE RUN Pytorch on 3.10
 
 #
 # evaluate : Leap on Python 3.6: ERROR: No matching distribution found for evaluate,

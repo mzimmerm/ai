@@ -647,5 +647,18 @@ Now we can test if the installed PyTorch (refered above as PyTorch-on-ROMm) actu
 #+RESULTS:
 : True
 
+For completeness, run a script that tests both rocm and pytorch installation and running. The script is mentioned in https://github.com/ROCm/ROCm/issues/2216 and is here: https://gist.github.com/damico/484f7b0a148a0c5f707054cf9c0a0533
+
+#+BEGIN_SRC sh
+
+  # This directory was setup to use pyenv Python3.10.7
+  ML_PROJECT=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
+  cd $ML_PROJECT
+  
+  python ./misc/test-rocm.py
+#+END_SRC
+
+#+RESULTS:
+
 Great. PyTorch works with ROCm on an old Ryzen 5 2500U!! This concludes our endeavor. 
 

@@ -1,5 +1,6 @@
 # From https://gist.github.com/damico/484f7b0a148a0c5f707054cf9c0a0533
 import torch, grp, pwd, os, subprocess
+import getpass
 devices = []
 try:
 	print("\n\nChecking ROCM support...")
@@ -36,7 +37,7 @@ try:
 
 
 	print("Checking user groups...")
-	user = os.getlogin()
+	user = getpass.getuser()
 	groups = [g.gr_name for g in grp.getgrall() if user in g.gr_mem]
 	gid = pwd.getpwnam(user).pw_gid
 	groups.append(grp.getgrgid(gid).gr_name)
