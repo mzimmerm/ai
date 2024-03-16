@@ -417,20 +417,34 @@ NOTE: wheel, todo what is it??
    I NEED TO INSTALL PYENV ON LEAP, THEN INSTALL 3.10 INTO IT. SEE
    https://unix.stackexchange.com/questions/757039/install-additional-python-on-opensuse-without-breaking-existing-pythons
 
-   
-venv is Python build-in module; pyvenv is Python script on top of venv. pyenv
-is a OS-level thing. All of them allow to create virtual environments
-See
-https://betterstack.com/community/questions/what-are-differences-between-python-virtual-environments/
 
-Notes about pyenv:
-- It allows to install multiple Python versions from source
-- The multiple versions are installed in userspace (user home directory)
-- User can switch between Python versions (todo-how)
-- The restriction is that any Python version we try to install must compile on your system
-- 
+*** Software packages which allow to use any Python version
 
-Status of Python on my system before installation:
+The above problem - AMD providing a Python package that requires a specific Python version (3.10, indicated by the *cp310* in the name) - is very common. We need Python 3.10, but is is not readily available on our system (Leap 15.5, but we would hit the same issure in Debian, RedHat etc).
+
+There are in 3 Python related pieces of software which let us to work around the problem. See for example https://betterstack.com/community/questions/what-are-differences-between-python-virtual-environments/. All of them allow to create virtual environments that allow to either install and/or switch between Python versions. But each of the 3 has their pros and cons:
+
+1. venv is Python build-in module
+   - Pros: Build in Python, relatively simple to setup a virtual environment for multiple Python versions
+   - Cons: It can only use and switch between Python versions available on the OS. If we need some really old, or really new Python version for which the OS doeas not have a system level package, we are out of luck. This is the case for us: There is no Python3.10 installable on Opensuse Leap 15.5, so we cannot use venv
+2. pyvenv is Python script on top of venv.
+   - Pros: As above
+   - Cons: As above
+3. pyenv is a OS-level thing. 
+   - Pros:
+     - It can install a massive variety of multiple Python versions, literally hundreds, pretty much any Python version and flavour that ever existed
+     - The multiple versions are installed in userspace (user home directory)
+     - User can switch between the versions globally (per user), locally (per directory), or for shell (per current shell lifetime)
+   - Cons:
+     - It must build the needed version from source. That means, various "devel" packages must be installed on our OS. Which packages? That depends on the OS. For Opensuse, RedHat, and Debian, see for example https://realpython.com/intro-to-pyenv/#build-dependencies
+     - Corollary of the above, the Python version must be buildable on the OS. 
+
+       
+*** Using *pyenv* to install the Python version for which AMD provides PyTorch on ROCm (3.10 at the time of writing, March 2024)
+
+Because ther is no official Python3.10 package for our OS (Opensuse leap 15.5), our only choice is using *pyenv*.
+
+Let us list the status of Python on my system before installation:
 
 #+BEGIN_SRC bash :results raw
 zypper search --installed-only python | grep -v "-"
@@ -440,7 +454,7 @@ zypper search --installed-only python | grep -v "-"
 | libpython3_6m1_0 | Python Interpreter shared library package |
 | python3          | Python 3 Interpreter package              |
 
-There is only python3, python3.6, python3.6m, all linked to python2.6
+There is only python3, python3.6, python3.6m, all linked to python3.6
 
 #+BEGIN_SRC bash :results raw
 python3 --version
@@ -449,15 +463,13 @@ python3 --version
 #+RESULTS:
 Python 3.6.15
 
-Now install pyenv
+Now let us go ahead and install pyenv
 
 #+BEGIN_SRC bash :results raw
-mkdir --parent ~/software/python/pyenv3.10-for-rocm-pytorch
-cd pyenv3.10-for-rocm-pytorch
 sudo zypper install pyenv
 #+END_SRC
 
-List the versions pyenv can install for us.
+For curiosity, list the versions pyenv can install for us. The list is massive, we just shoe a subset:
 
 #+BEGIN_SRC bash
 pyenv install --list
@@ -466,16 +478,9 @@ pyenv install --list
 #+RESULTS:
 |       Available |
 |-----------------|
-|                 |
-|         3.6-dev |
 |          3.10.0 |
 |        3.10-dev |
 |          3.10.1 |
-|          3.10.2 |
-|          3.10.3 |
-|          3.10.4 |
-|          3.10.5 |
-|          3.10.6 |
 |          3.10.7 |
 |       3.11.0rc2 |
 |  anaconda-1.4.0 |
@@ -483,7 +488,7 @@ pyenv install --list
 
 The list in the result of 'pyenv install --list' comes from official Python releases and other sources.
 
-Now we need to select the version we want to use for Pytorch. In that, we are limited to the version(s) for which AMD builds and tests their Pytorch-on-ROCm. These versions are available in todo
+Now we need to select the version we want to use for Pytorch-on-ROCm. In that, we are limited to the version(s) for which AMD builds and tests their Pytorch-on-ROCm. These versions are available in todo
 
 AMD provides us with PyTorch build for Python 3.10. Let's use pyenv to install Python3.10.7. First we need to set some pyenv-used environment variables:
 
@@ -549,37 +554,98 @@ pyenv local 3.10.7  # select when you are in the current directory (or subdirect
 pyenv global 3.10.7 #  select globally for your user account
 #+END_SRC
 
-In our use of a ML project that uses PyTorch on ROCm, we will want to create a directory, say ~$ML_HOME~ in which our code will run using Python3.10.7. The following is a one-time command we need to run for any commands from ~$ML_HOME~ use Python3.10.7 in the future:
+In our use of a ML project that uses PyTorch on ROCm, we will want to create a directory, say ~$ML_PROJECT~ in which our code will run using Python3.10.7. The following is a one-time command we need to run for any commands from ~$ML_PROJECT~ use Python3.10.7 in the future:
 
 #+BEGIN_SRC sh :results raw
-  ML_HOME=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
-  cd $ML_HOME
+  ML_PROJECT=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
+  cd $ML_PROJECT
   pyenv local 3.10.7
 #+END_SRC
 
 To confirm that is indeed true, try this
 #+BEGIN_SRC sh :results raw
-  ML_HOME=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
-  # When in the directory for which we ran 'pyenv local 3.10.7', 3.10.7 is used
-  cd $ML_HOME
-  which python3
-  python3 --version # 3.10.7
-  python --version  # 3.10.7
-  # When in the directory above, the system version is used
+  ML_PROJECT=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
+  echo When in the directory for which we ran 'pyenv local 3.10.7', the 3.10.7 is used
+  cd $ML_PROJECT
+  which python3     # From $HOME/.pyenv/shims
+  which python      # As above
+  which pip3        # As above
+  which pip         # As above
+  python3 --version # 3.10.7, the pyenv version
+  python --version  # as above
+  pip3 --version     # 22.2.2, the pyenv version
+  pip --version
+  echo When in the directory above, the OS version is used
   cd ..
-  python3 --version # 3.6.15
+  which python3     # From $HOME/.pyenv/shims, but directed to OS version, see below
+  python3 --version # 3.6.15, the OS version
   python --version  # no python
+  which pip3        # From $HOME/.pyenv/shims, but directed to OS version, see below
+  pip3 --version    # 20.0.2, the OS version
 #+END_SRC
 
 #+RESULTS:
+When in the directory for which we ran pyenv local 3.10.7, the 3.10.7 is used
 /home/mzimmermann/.pyenv/shims/python3
+/home/mzimmermann/.pyenv/shims/python
+/home/mzimmermann/.pyenv/shims/pip3
+/home/mzimmermann/.pyenv/shims/pip
 Python 3.10.7
 Python 3.10.7
+pip 22.2.2 from /home/mzimmermann/.pyenv/versions/3.10.7/lib/python3.10/site-packages/pip (python 3.10)
+pip 22.2.2 from /home/mzimmermann/.pyenv/versions/3.10.7/lib/python3.10/site-packages/pip (python 3.10)
+When in the directory above, the OS version is used
+/home/mzimmermann/.pyenv/shims/python3
 Python 3.6.15
+/home/mzimmermann/.pyenv/shims/pip3
+pip 20.0.2 from /usr/lib/python3.6/site-packages/pip (python 3.6)
 
-The functionality is achieved by the presence of the file ~.python-version~ in the directory ~$ML_HOME~, so do not delete it.
-
-This corresponds to   Also, any Python imports run from there
+The functionality of using the intended Python version when in the directory ~$ML_PROJECT~ is achieved by the presence of the file ~.python-version~ in the directory, so do not delete the file.
 
 
+
+*** Install AMD's PyTorch-on-ROCm
+
+Now we are ready to install AMD's PyTorch-on-ROCm, using the AMD provided builds, as described in https://rocm.docs.amd.com/projects/radeon/en/latest/docs/install/install-pytorch.html, with additional motivation of WHY to use only the AMD builds of PyTorch discussed in https://github.com/pytorch/pytorch/issues/120433. 
+
+
+RUN
+#+BEGIN_SRC sh :results raw
+
+  # This directory was setup to use pyenv Python3.10.7
+  ML_PROJECT=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
+  cd $ML_PROJECT
+
+  # In case non-AMD versions are installed. Probably not needed with force-reinstall
+  pip3 uninstall torch torchvision
+
+  # Download AMD's PyTorch-on-ROCm
+  wget https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/torch-2.1.2+rocm6.0-cp310-cp310-linux_x86_64.whl
+  wget https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/torchvision-0.16.1+rocm6.0-cp310-cp310-linux_x86_64.whl
+
+  # Force reinstall torch and torchvision
+  pip3 install --force-reinstall torch-2.1.2+rocm6.0-cp310-cp310-linux_x86_64.whl torchvision-0.16.1+rocm6.0-cp310-cp310-linux_x86_64.whl
+
+#+END_SRC
+
+The ~pip3 install~ installed torch, torchvision, and many packages they depend on to the pyenv directory ~$HOME/.pyenv/versions/3.10.7/lib/python3.10/site-packages~.
+
+Now we can test if the installed PyTorch (refered above as PyTorch-on-ROMm) actually uses the GPU. If it does, a simple Python code should respond "True" to CUDA being available. NOTE THAT CUDA DOES NOT REFER TO NVIDIA, IT MERELY STATES THAT A LOW LEVEL GPU LIBRARY (ROCm IN OUR CASE) IS AVAILABLE TO PYTORCH.
+
+#+BEGIN_SRC sh
+
+  # This directory was setup to use pyenv Python3.10.7
+  ML_PROJECT=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
+  cd $ML_PROJECT
+  
+  python << EOF
+  import torch
+  print(torch.cuda.is_available())
+  EOF
+#+END_SRC
+
+#+RESULTS:
+: True
+
+Great. PyTorch works with ROCm on an old Ryzen 5 2500U!! This concludes our endeavor. 
 
