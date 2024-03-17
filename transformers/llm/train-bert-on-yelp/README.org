@@ -666,19 +666,6 @@ Great. PyTorch works with ROCm on an old Ryzen 5 2500U!! This concludes our ende
 
 * Script to fully uninstall and reinstall ROCm (amdgpu) and PyTorch
 
-----
-sudo zypper addrepo https://download.opensuse.org/repositories/devel:languages:perl/SLE_15_SP5/devel:languages:perl.repo
-sudo zypper install kernel-default-devel
-# See prerequisites. Adding current user to Video and Render groups
-sudo usermod -a -G render,video $LOGNAME
-sudo zypper --no-gpg-checks install https://repo.radeon.com/amdgpu-install/6.0.2/sle/15.5/amdgpu-install-6.0.60002-1.noarch.rpm
-sudo zypper refresh
-sudo zypper install amdgpu-dkms
-sudo zypper install rocm
-echo "Please reboot system for all settings to take effect."
-----
-
-
 sudo amdgpu-install --uninstall
 sudo zypper removerepo "amdgpu"
 sudo zypper removerepo "amdgpu-src"
@@ -723,6 +710,7 @@ AMDGPU_ROCM_RPM=https://repo.radeon.com/amdgpu-install/6.0.2/sle/15.5/amdgpu-ins
 # Install ROCM from native package manager
 # sudo zypper addrepo https://download.opensuse.org/repositories/devel:languages:perl/SLE_15_SP5/devel:languages:perl.repo
 sudo zypper addrepo https://download.opensuse.org/repositories/devel:/languages:/perl/openSUSE_Tumbleweed/
+
 sudo zypper install kernel-default-devel
 # See prerequisites. Adding current user to Video and Render groups
 sudo usermod -a -G render,video $LOGNAME
@@ -764,7 +752,7 @@ wget https://raw.githubusercontent.com/wiki/ROCmSoftwarePlatform/pytorch/files/i
 ## this does not work on suse it seems.
 #./install_kdb_files_for_pytorch_wheels.sh
 
-# Try torch from docker
+# FAILED - Try torch from docker
 
 pip3 uninstall torch torchvision torchaudio
 
@@ -786,11 +774,10 @@ BUT IF FAILE WITH SAME ERROR: HSA_STATUS_ERROR_EXCEPTION: An HSAIL operation res
 ============================
 
 
-After the above installation of ROCm (amdgpu) todo check if it worked and how
+** After the above installation of ROCm (amdgpu) todo check if it worked and how
 
 
-AFTER rocm install:
-localhost:~ # glxinfo | egrep -i 'device|memory'
+*** localhost:~ # glxinfo | egrep -i 'device|memory'
     Device: llvmpipe (LLVM 15.0.7, 256 bits) (0xffffffff)
     Video memory: 14875MB
     Unified memory: yes
@@ -803,19 +790,17 @@ localhost:~ # glxinfo | egrep -i 'device|memory'
     GL_EXT_map_buffer_range, GL_EXT_memory_object, GL_EXT_memory_object_fd, 
 
 
-> rocminfo | grep Name
+*** rocminfo | grep Name
 
-#> dmesg | grep kfd
+*** dmesg | grep kfd
+*** dmesg | grep rocm
 
-#> dmesg | grep rocm
+*** sudo modprobe -vvr amdgpu
 
-#> sudo modprobe -vvr amdgpu
+*** sudo modprobe -vv amdgpu
 
-#> mzimmermann@localhost:~/tmp> sudo modprobe -vv amdgpu
 
-AFTER REBOOT, check rocm and amdgpu loaded:
-
-localhost:~ # lsmod | grep amdgpu
+*** localhost:~ # lsmod | grep amdgpu
 amdgpu              13303808  42
 amdxcp                 12288  1 amdgpu
 i2c_algo_bit           20480  1 amdgpu
@@ -828,7 +813,7 @@ drm_buddy              20480  1 amdgpu
 drm_display_helper    237568  1 amdgpu
 video                  77824  2 acer_wmi,amdgpu
 
- glxinfo | egrep -i 'device|memory'
+*** glxinfo | egrep -i 'device|memory'
     Device: AMD Radeon Graphics (radeonsi, raven, LLVM 17.0.6, DRM 3.57, 6.7.9-1-default) (0x15dd)
     Video memory: 1024MB
     Unified memory: no
@@ -854,7 +839,7 @@ Memory info (GL_NVX_gpu_memory_info):
     GL_EXT_instanced_arrays, GL_EXT_map_buffer_range, GL_EXT_memory_object, 
     GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
 
-localhost:~ #  rocminfo | grep Name
+*** localhost:~ #  rocminfo | grep Name
   Name:                    AMD Ryzen 5 2500U with Radeon Vega Mobile Gfx
   Marketing Name:          AMD Ryzen 5 2500U with Radeon Vega Mobile Gfx
   Vendor Name:             CPU                                
@@ -865,11 +850,11 @@ localhost:~ #  rocminfo | grep Name
 
 
       
-localhost:~ # rocminfo | grep gfx
+*** localhost:~ # rocminfo | grep gfx
   Name:                    gfx902                             
       Name:                    amdgcn-amd-amdhsa--gfx902:xnack+   
 
-
+** FAILED INSTALL METHODS
 
 ============ NO LUCK - TRY REBUILD PYTORCH FROM GIT AS SUGGESTED HERE
 
@@ -907,3 +892,34 @@ sudo modprobe amdgpu ppfeaturemask=0xfff73fff
 ======================== SET MORE UMA/VRAM MEMORY
 
 sEE https://bbs.archlinux.org/viewtopic.php?id=283308
+
+
+** LATEST INSTALL ATTEMPT AT TUMBLEWEED - USE THE AMDGPU-INSTALL METHOD
+# LATEST
+# UP TO HERE CAN BE IGNORED. START HERE
+sudo zypper remove amdgpu-dkms
+sudo zypper remove amdgpu
+sudo zypper remove rocm
+sudo zypper remove rocm-*
+sudo zypper rm amdgpu-core
+sudo zypper rm amdgpu-*
+# NO this removes Plasma and all: zypper rm kernel-firmware-amdgpu libdrm_amdgpu1
+sudo zypper rm kernel-firmware-amdgpu
+
+#
+echo "Please reboot system for all settings to take effect."
+#
+
+sudo usermod -a -G render,video $LOGNAME
+
+sudo zypper --no-gpg-checks install https://repo.radeon.com/amdgpu-install/6.0.2/sle/15.5/amdgpu-install-6.0.60002-1.noarch.rpm
+
+# Something added additional ROCm repos, removing them manuall!!
+
+# sudo amdgpu-install --usecase=graphics,rocm
+sudo amdgpu-install --usecase=rocm # Ignoring 'No provider of amdgpu-dkms found'
+Installation has completed with error.
+
+
+
+
