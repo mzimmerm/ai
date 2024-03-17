@@ -819,10 +819,12 @@ HSA_OVERRIDE_GFX_VERSION=9.0.0 python3 main.py
 AMD_LOG_LEVEL=5 HSA_OVERRIDE_GFX_VERSION=9.0.0 python
 
 
-=========================  TRY TO DISABLE SOME THINGS IN HARDWARE GPU
+========================= FAILED - TRY TO DISABLE SOME THINGS IN HARDWARE GPU
 
 According to https://github.com/ROCm/ROCm/issues/1743#issuecomment-1149902796
 sudo modprobe amdgpu ppfeaturemask=0xfff73fff
 
 
-======================== TRY TO FIND THE NOTE ABOUT
+======================== SET MORE UMA/VRAM MEMORY
+
+sEE https://bbs.archlinux.org/viewtopic.php?id=283308
