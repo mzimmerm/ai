@@ -752,6 +752,17 @@ ROCM_TORCH_WHL="--index-url https://download.pytorch.org/whl/nightly/rocm6.0"
 cd HUGE-NO-BACKUP
 pip3 install --force-reinstall --pre torch torchvision torchaudio $ROCM_TORCH_WHL
 
+# Next do post-torch-install steps
+wget https://raw.githubusercontent.com/wiki/ROCmSoftwarePlatform/pytorch/files/install_kdb_files_for_pytorch_wheels.sh
+
+#Optional; replace 'gfx90a' with your architecture and 5.6 with your preferred ROCm version
+export GFX_ARCH=gfx900
+
+#Optional
+export ROCM_VERSION=6.0
+
+# this does not work on suse it seems.
+./install_kdb_files_for_pytorch_wheels.sh
 
 
 
