@@ -755,16 +755,33 @@ pip3 install --force-reinstall --pre torch torchvision torchaudio $ROCM_TORCH_WH
 # Next do post-torch-install steps
 wget https://raw.githubusercontent.com/wiki/ROCmSoftwarePlatform/pytorch/files/install_kdb_files_for_pytorch_wheels.sh
 
-#Optional; replace 'gfx90a' with your architecture and 5.6 with your preferred ROCm version
-export GFX_ARCH=gfx900
+##Optional; replace 'gfx90a' with your architecture and 5.6 with your preferred ROCm version
+#export GFX_ARCH=gfx900
+#
+##Optional
+#export ROCM_VERSION=6.0
+#
+## this does not work on suse it seems.
+#./install_kdb_files_for_pytorch_wheels.sh
 
-#Optional
-export ROCM_VERSION=6.0
+# Try torch from docker
 
-# this does not work on suse it seems.
-./install_kdb_files_for_pytorch_wheels.sh
+pip3 uninstall torch torchvision torchaudio
 
+sudo zypper install docker
 
+sudo systemctl enable docker.service
+sudo systemctl start docker.service 
+sudo docker pull rocm/pytorch:latest
+sudo docker run -it --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
+--device=/dev/kfd --device=/dev/dri --group-add video \
+--ipc=host --shm-size 4G rocm/pytorch:latest
+
+In the docker prompt, run:
+
+HSA_OVERRIDE_GFX_VERSION=9.0.0 python -c "import torch; cuda0 = torch.device('cuda:0');print(torch.ones([2, 4], dtype=torch.float64, device=cuda0)); print('done')"
+
+BUT IF FAILE WITH SAME ERROR: HSA_STATUS_ERROR_EXCEPTION: An HSAIL operation resulted in a hardware exception. code: 0x1016
 
 ============================
 
@@ -796,9 +813,59 @@ localhost:~ # glxinfo | egrep -i 'device|memory'
 
 #> mzimmermann@localhost:~/tmp> sudo modprobe -vv amdgpu
 
-AFTER REBOOT, rocm and amdgpu loaded:
+AFTER REBOOT, check rocm and amdgpu loaded:
 
-localhost:~ #
+localhost:~ # lsmod | grep amdgpu
+amdgpu              13303808  42
+amdxcp                 12288  1 amdgpu
+i2c_algo_bit           20480  1 amdgpu
+drm_ttm_helper         12288  1 amdgpu
+ttm                   102400  2 amdgpu,drm_ttm_helper
+drm_exec               16384  1 amdgpu
+gpu_sched              65536  1 amdgpu
+drm_suballoc_helper    12288  1 amdgpu
+drm_buddy              20480  1 amdgpu
+drm_display_helper    237568  1 amdgpu
+video                  77824  2 acer_wmi,amdgpu
+
+ glxinfo | egrep -i 'device|memory'
+    Device: AMD Radeon Graphics (radeonsi, raven, LLVM 17.0.6, DRM 3.57, 6.7.9-1-default) (0x15dd)
+    Video memory: 1024MB
+    Unified memory: no
+Memory info (GL_ATI_meminfo):
+    VBO free memory - total: 729 MB, largest block: 729 MB
+    VBO free aux. memory - total: 7309 MB, largest block: 7309 MB
+    Texture free memory - total: 729 MB, largest block: 729 MB
+    Texture free aux. memory - total: 7309 MB, largest block: 7309 MB
+    Renderbuffer free memory - total: 729 MB, largest block: 729 MB
+    Renderbuffer free aux. memory - total: 7309 MB, largest block: 7309 MB
+Memory info (GL_NVX_gpu_memory_info):
+    Dedicated video memory: 1024 MB
+    Total available memory: 8465 MB
+    Currently available dedicated video memory: 729 MB
+    GL_AMD_performance_monitor, GL_AMD_pinned_memory, 
+    GL_EXT_framebuffer_object, GL_EXT_framebuffer_sRGB, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_packed_depth_stencil, GL_EXT_packed_float, 
+    GL_NVX_gpu_memory_info, GL_NV_alpha_to_coverage_dither_control, 
+    GL_AMD_pinned_memory, GL_AMD_query_buffer_object, 
+    GL_EXT_gpu_program_parameters, GL_EXT_gpu_shader4, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
+    GL_MESA_window_pos, GL_NVX_gpu_memory_info, GL_NV_ES1_1_compatibility, 
+    GL_EXT_instanced_arrays, GL_EXT_map_buffer_range, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
+
+localhost:~ #  rocminfo | grep Name
+  Name:                    AMD Ryzen 5 2500U with Radeon Vega Mobile Gfx
+  Marketing Name:          AMD Ryzen 5 2500U with Radeon Vega Mobile Gfx
+  Vendor Name:             CPU                                
+  Name:                    gfx902                             
+  Marketing Name:          AMD Radeon Graphics                
+  Vendor Name:             AMD                                
+  Name:                    amdgcn-amd-amdhsa--gfx902:xnack+   
+
+
+      
+localhost:~ # rocminfo | grep gfx
   Name:                    gfx902                             
       Name:                    amdgcn-amd-amdhsa--gfx902:xnack+   
 
