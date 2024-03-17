@@ -894,7 +894,7 @@ sudo modprobe amdgpu ppfeaturemask=0xfff73fff
 sEE https://bbs.archlinux.org/viewtopic.php?id=283308
 
 
-** LATEST INSTALL ATTEMPT AT TUMBLEWEED - USE THE AMDGPU-INSTALL METHOD
+** LATEST INSTALL ATTEMPT AT TUMBLEWEED - REMOVE ALL PACKAGES, REINSTALL USING THE AMDGPU-INSTALL METHOD
 # LATEST
 # UP TO HERE CAN BE IGNORED. START HERE
 sudo zypper remove amdgpu-dkms
@@ -918,8 +918,16 @@ sudo zypper --no-gpg-checks install https://repo.radeon.com/amdgpu-install/6.0.2
 
 # sudo amdgpu-install --usecase=graphics,rocm
 sudo amdgpu-install --usecase=rocm # Ignoring 'No provider of amdgpu-dkms found'
-Installation has completed with error.
+
+*Installation has completed with error. BUT THINGS SEEM GENERALLY OK SO KEEP GOING*
+
+#
+echo "Please reboot system for all settings to take effect."
+#
 
 
+ROCM_TORCH_WHL="--index-url https://download.pytorch.org/whl/nightly/rocm6.0"
 
-
+# Install Torch from nightly wheel files.
+cd HUGE-NO-BACKUP
+pip3 install --force-reinstall --pre torch torchvision torchaudio $ROCM_TORCH_WHL
