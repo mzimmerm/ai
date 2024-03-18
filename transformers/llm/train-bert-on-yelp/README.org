@@ -1,3 +1,9 @@
+* Ubuntu configuration changes during setup
+
+gsettings set org.gnome.SessionManager auto-save-session true # save session across reboot
+
+/home/mzimmermann/.local/bin # to instal glxinfo
+
 * TL;DR for this project, once everything is installed
 
 jupyter-lab train-bert-on-yelp-local.ipynb : Start notebook
@@ -72,7 +78,7 @@ jupyter-lab train-bert-on-yelp-local.ipynb : Start notebook
 
            
 
-* Useful linux and python commands for AI
+* Useful linux and python3 commands for AI
 
 ** Synchronize
 
@@ -309,9 +315,9 @@ Save the script as, for example  misc/test-rocm.py and run
 
 
 - source ~/software/python/venv3.6-for-ai-rocm/bin/activate
-- python misc/test-rocm.py
+- python3 misc/test-rocm.py
 
-  (venv3.6-for-ai-rocm) mzimmermann@localhost:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp> python misc/test-rocm.py
+  (venv3.6-for-ai-rocm) mzimmermann@localhost:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp> python3 misc/test-rocm.py
 
 
 Checking ROCM support...
@@ -365,7 +371,7 @@ just install torch:
 (requirement already satisfied in my case)
 
 So run the scripot again:
-(venv3.6-for-ai-rocm) mzimmermann@localhost:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp> python misc/test-rocm.py
+(venv3.6-for-ai-rocm) mzimmermann@localhost:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp> python3 misc/test-rocm.py
 
 
 Checking ROCM support...
@@ -604,7 +610,7 @@ The functionality of using the intended Python version when in the directory ~$M
 
 
 
-*** Install AMD's PyTorch-on-ROCm
+*** Install AMD's PyTorch-on-ROCm - FAILING: HIP error: shared object initialization failed
 
 Now we are ready to install AMD's PyTorch-on-ROCm, using the AMD provided builds, as described in https://rocm.docs.amd.com/projects/radeon/en/latest/docs/install/install-pytorch.html, with additional motivation of WHY to use only the AMD builds of PyTorch discussed in https://github.com/pytorch/pytorch/issues/120433. 
 
@@ -638,7 +644,7 @@ Now we can test if the installed PyTorch (refered above as PyTorch-on-ROMm) actu
   ML_PROJECT=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
   cd $ML_PROJECT
   
-  python << EOF
+  python3 << EOF
   import torch
   print(torch.cuda.is_available())
   EOF
@@ -655,12 +661,11 @@ For completeness, run a script that tests both rocm and pytorch installation and
   ML_PROJECT=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
   cd $ML_PROJECT
   
-  python ./misc/test-rocm.py
+  python3 ./misc/test-rocm.py
 #+END_SRC
 
 #+RESULTS:
 
-Great. PyTorch works with ROCm on an old Ryzen 5 2500U!! This concludes our endeavor. 
 
 
 
@@ -765,7 +770,7 @@ sudo docker run -it --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
 
 In the docker prompt, run:
 
-HSA_OVERRIDE_GFX_VERSION=9.0.0 python -c "import torch; cuda0 = torch.device('cuda:0');print(torch.ones([2, 4], dtype=torch.float64, device=cuda0)); print('done')"
+HSA_OVERRIDE_GFX_VERSION=9.0.0 python3 -c "import torch; cuda0 = torch.device('cuda:0');print(torch.ones([2, 4], dtype=torch.float64, device=cuda0)); print('done')"
 
 BUT IF FAILE WITH SAME ERROR: HSA_STATUS_ERROR_EXCEPTION: An HSAIL operation resulted in a hardware exception. code: 0x1016
 
@@ -775,7 +780,7 @@ BUT IF FAILE WITH SAME ERROR: HSA_STATUS_ERROR_EXCEPTION: An HSAIL operation res
 ** After the above installation of ROCm (amdgpu) todo check if it worked and how
 
 
-*** localhost:~ # glxinfo | egrep -i 'device|memory'
+*** glxinfo | egrep -i 'device|memory'
     Device: llvmpipe (LLVM 15.0.7, 256 bits) (0xffffffff)
     Video memory: 14875MB
     Unified memory: yes
@@ -787,18 +792,21 @@ BUT IF FAILE WITH SAME ERROR: HSA_STATUS_ERROR_EXCEPTION: An HSAIL operation res
     GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
     GL_EXT_map_buffer_range, GL_EXT_memory_object, GL_EXT_memory_object_fd, 
 
-
 *** rocminfo | grep Name
-
-*** dmesg | grep kfd
-*** dmesg | grep rocm
-
-*** sudo modprobe -vvr amdgpu
-
-*** sudo modprobe -vv amdgpu
-
-
-*** localhost:~ # lsmod | grep amdgpu
+  Name:                    AMD Ryzen 5 2500U with Radeon Vega Mobile Gfx
+  Marketing Name:          AMD Ryzen 5 2500U with Radeon Vega Mobile Gfx
+  Vendor Name:             CPU                                
+  Name:                    gfx902                             
+  Marketing Name:          AMD Radeon Graphics                
+  Vendor Name:             AMD                                
+  Name:                    amdgcn-amd-amdhsa--gfx902:xnack+   
+     
+*** rocminfo | grep gfx
+  Name:                    gfx902                             
+*** sudo dmesg | grep kfd
+*** sudo dmesg | grep rocm
+*** sudo modprobe -vv amdgpu # also try --vvr!
+*** lsmod | grep amdgpu
 amdgpu              13303808  42
 amdxcp                 12288  1 amdgpu
 i2c_algo_bit           20480  1 amdgpu
@@ -810,46 +818,6 @@ drm_suballoc_helper    12288  1 amdgpu
 drm_buddy              20480  1 amdgpu
 drm_display_helper    237568  1 amdgpu
 video                  77824  2 acer_wmi,amdgpu
-
-*** glxinfo | egrep -i 'device|memory'
-    Device: AMD Radeon Graphics (radeonsi, raven, LLVM 17.0.6, DRM 3.57, 6.7.9-1-default) (0x15dd)
-    Video memory: 1024MB
-    Unified memory: no
-Memory info (GL_ATI_meminfo):
-    VBO free memory - total: 729 MB, largest block: 729 MB
-    VBO free aux. memory - total: 7309 MB, largest block: 7309 MB
-    Texture free memory - total: 729 MB, largest block: 729 MB
-    Texture free aux. memory - total: 7309 MB, largest block: 7309 MB
-    Renderbuffer free memory - total: 729 MB, largest block: 729 MB
-    Renderbuffer free aux. memory - total: 7309 MB, largest block: 7309 MB
-Memory info (GL_NVX_gpu_memory_info):
-    Dedicated video memory: 1024 MB
-    Total available memory: 8465 MB
-    Currently available dedicated video memory: 729 MB
-    GL_AMD_performance_monitor, GL_AMD_pinned_memory, 
-    GL_EXT_framebuffer_object, GL_EXT_framebuffer_sRGB, GL_EXT_memory_object, 
-    GL_EXT_memory_object_fd, GL_EXT_packed_depth_stencil, GL_EXT_packed_float, 
-    GL_NVX_gpu_memory_info, GL_NV_alpha_to_coverage_dither_control, 
-    GL_AMD_pinned_memory, GL_AMD_query_buffer_object, 
-    GL_EXT_gpu_program_parameters, GL_EXT_gpu_shader4, GL_EXT_memory_object, 
-    GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
-    GL_MESA_window_pos, GL_NVX_gpu_memory_info, GL_NV_ES1_1_compatibility, 
-    GL_EXT_instanced_arrays, GL_EXT_map_buffer_range, GL_EXT_memory_object, 
-    GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
-
-*** localhost:~ #  rocminfo | grep Name
-  Name:                    AMD Ryzen 5 2500U with Radeon Vega Mobile Gfx
-  Marketing Name:          AMD Ryzen 5 2500U with Radeon Vega Mobile Gfx
-  Vendor Name:             CPU                                
-  Name:                    gfx902                             
-  Marketing Name:          AMD Radeon Graphics                
-  Vendor Name:             AMD                                
-  Name:                    amdgcn-amd-amdhsa--gfx902:xnack+   
-
-
-      
-*** localhost:~ # rocminfo | grep gfx
-  Name:                    gfx902                             
       Name:                    amdgcn-amd-amdhsa--gfx902:xnack+   
 
 ** FAILED INSTALL METHODS
@@ -953,9 +921,151 @@ sudo apt install amdgpu-dkms
 sudo apt install rocm
 echo "Please reboot system for all settings to take effect."
 
-** Installing PyTorch using the wheel whl files from AMD for ROCm 6.0.2.
+** Installing PyTorch using the wheel whl files from AMD for ROCm 6.0.2. - FAILED with HIP error: shared object initialization failed
 
 wget https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/torch-2.1.2+rocm6.0-cp310-cp310-linux_x86_64.whl
 wget https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/torchvision-0.16.1+rocm6.0-cp310-cp310-linux_x86_64.whl
 pip3 install --force-reinstall torch-2.1.2+rocm6.0-cp310-cp310-linux_x86_64.whl torchvision-0.16.1+rocm6.0-cp310-cp310-linux_x86_64.whl
+
+Successfully installed, with warning:
+
+ WARNING: The script isympy is installed in '/home/mzimmermann/.local/bin' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+  WARNING: The script f2py is installed in '/home/mzimmermann/.local/bin' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+  WARNING: The script normalizer is installed in '/home/mzimmermann/.local/bin' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+  WARNING: The scripts convert-caffe2-to-onnx, convert-onnx-to-caffe2 and torchrun are installed in '/home/mzimmermann/.local/bin' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+
+*** Testing after installation
+
+mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp$ glxinfo | egrep -i 'device|memory'
+    Device: AMD Radeon Graphics (raven, LLVM 15.0.7, DRM 3.56, 6.5.0-25-generic) (0x15dd)
+    Video memory: 1024MB
+    Unified memory: no
+Memory info (GL_ATI_meminfo):
+    VBO free memory - total: 753 MB, largest block: 753 MB
+    VBO free aux. memory - total: 7378 MB, largest block: 7378 MB
+    Texture free memory - total: 753 MB, largest block: 753 MB
+    Texture free aux. memory - total: 7378 MB, largest block: 7378 MB
+    Renderbuffer free memory - total: 753 MB, largest block: 753 MB
+    Renderbuffer free aux. memory - total: 7378 MB, largest block: 7378 MB
+Memory info (GL_NVX_gpu_memory_info):
+    Dedicated video memory: 1024 MB
+    Total available memory: 8461 MB
+    Currently available dedicated video memory: 753 MB
+    GL_AMD_performance_monitor, GL_AMD_pinned_memory, 
+    GL_EXT_framebuffer_object, GL_EXT_framebuffer_sRGB, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_packed_depth_stencil, GL_EXT_packed_float, 
+    GL_MESA_texture_signed_rgba, GL_NVX_gpu_memory_info, 
+    GL_AMD_pinned_memory, GL_AMD_query_buffer_object, 
+    GL_EXT_gpu_program_parameters, GL_EXT_gpu_shader4, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
+    GL_MESA_texture_signed_rgba, GL_MESA_window_pos, GL_NVX_gpu_memory_info, 
+    GL_EXT_instanced_arrays, GL_EXT_map_buffer_range, GL_EXT_memory_object, 
+    GL_EXT_memory_object_fd, GL_EXT_multi_draw_arrays, 
+mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp$ rocminfo | grep Name
+  Name:                    AMD Ryzen 5 2500U with Radeon Vega Mobile Gfx
+  Marketing Name:          AMD Ryzen 5 2500U with Radeon Vega Mobile Gfx
+  Vendor Name:             CPU                                
+  Name:                    gfx902                             
+  Marketing Name:          AMD Radeon Graphics                
+  Vendor Name:             AMD                                
+      Name:                    amdgcn-amd-amdhsa--gfx902:xnack+   
+mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp$  dmesg | grep kfd
+dmesg: read kernel buffer failed: Operation not permitted
+mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp$ sudo dmesg | grep kfd
+[    5.469797] kfd kfd: amdgpu: Allocated 3969056 bytes on gart
+[    5.469828] kfd kfd: amdgpu: Total number of KFD nodes to be created: 1
+[    5.470194] kfd kfd: amdgpu: added device 1002:15dd
+mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp$ sudo dmesg | grep rocm
+mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp$ sudo modprobe -vv amdgpu
+modprobe: INFO: ../libkmod/libkmod.c:367 kmod_set_log_fn() custom logging function 0x648e67749830 registered
+modprobe: INFO: ../libkmod/libkmod.c:334 kmod_unref() context 0x648e677dd460 released
+mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp$ lsmod | grep amdgpu
+amdgpu              16670720  25
+amddrm_ttm_helper      12288  1 amdgpu
+amdttm                110592  2 amdgpu,amddrm_ttm_helper
+amddrm_buddy           20480  1 amdgpu
+amdxcp                 12288  1 amdgpu
+amd_sched              61440  1 amdgpu
+amdkcl                 32768  3 amd_sched,amdttm,amdgpu
+drm_display_helper    241664  1 amdgpu
+drm_kms_helper        274432  4 drm_display_helper,amdgpu
+drm                   765952  14 drm_kms_helper,amd_sched,amdttm,drm_display_helper,amdgpu,amddrm_buddy,amddrm_ttm_helper,amdxcp
+i2c_algo_bit           16384  1 amdgpu
+video                  73728  2 acer_wmi,amdgpu
+
+
+
+
+mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp$ HSA_OVERRIDE_GFX_VERSION=9.0.0 python3 -c "import torch; cuda0 = torch.device('cuda:0');print(torch.ones([2, 4], dtype=torch.float64, device=cuda0)); print('done')"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+RuntimeError: HIP error: shared object initialization failed
+HIP kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing HIP_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_HIP_DSA` to enable device-side assertions.
+
+mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp$ 
+
+** Installing PyTorch using NIGHTLY for ROCm 6.0.2 - Fails ERROR: HSA_STATUS_ERROR_MEMORY_APERTURE_VIOLATION: The agent attempted to access memory beyond the largest legal address.
+
+
+ROCM_TORCH_WHL="--index-url https://download.pytorch.org/whl/nightly/rocm6.0"
+cd HUGE-NO-BACKUP
+pip3 install --force-reinstall --pre torch torchvision  $ROCM_TORCH_WHL
+
+
+* Back to basics: Install ROCM 5.7, Torch 1.13 (latest Torch 1, latest ROCM 5
+
+
+** Install PYENV
+
+Pyenv is not available in the official Ubuntu package repository. However, you can install it manually12345. Here are the steps:
+
+Install and Update Dependencies Start by updating system packages:
+sudo apt update -y
+Then, install all of Pyenv’s dependencies:
+
+sudo apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python3-openssl git
+
+Download the Script of Pyenv Download the script of Pyenv with the following command:
+
+curl https://pyenv.run | bash
+
+Set the Environment Up Run the following block of commands to set certain crucial environment variables and set up Pyenv autocompletion:
+
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> ~/.bashrc
+Finally, restart the shell to begin utilizing Pyenv:
+exec "$SHELL"
+
+
+** Install pyenv Python 3.9
+
+pyenv install 3.9
+
+** Uninstall ROCm 6.0.2
+
+sudo apt autoremove rocm-core
+# Or for version specific packages:
+sudo apt autoremove rocm-core6.0.2
+
+sudo apt autoremove amdgpu-dkms
+
+# Remove the repositories.
+sudo rm /etc/apt/sources.list.d/rocm.list
+sudo rm /etc/apt/sources.list.d/amdgpu.list
+
+# Clear the cache and clean the system.
+sudo rm -rf /var/cache/apt/*
+sudo apt-get clean all
+
+# Restart the system.
+sudo reboot
+
+
 

@@ -48,7 +48,7 @@ try:
                 print('BAD: The user', user, 'is NOT in RENDER and VIDEO groups. This is necessary in order to PyTorch use HIP resources')
 
         if torch.cuda.is_available():
-                print("GOOD: PyTorch ROCM support found.")
+                print("GOOD: torch.cuda.is_available, so PyTorch ROCM support found.")
 
                 print('Testing PyTorch ROCM support...')
                 print(torch.zeros([2, 4], dtype=torch.int32))
