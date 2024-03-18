@@ -1053,7 +1053,7 @@ pyenv install 3.9
 sudo apt autoremove rocm-core
 # Or for version specific packages:
 sudo apt autoremove rocm-core6.0.2
-
+sudo apt autoremove amdgpu-install
 sudo apt autoremove amdgpu-dkms
 
 # Remove the repositories.
@@ -1069,7 +1069,7 @@ sudo reboot
 
 
 
-** progress Install ROCm 5.7.3
+** todo Install ROCm 5.7.3
 
 # Check enabled repositories
 sudo grep -rhE ^deb /etc/apt/sources.list*
@@ -1096,8 +1096,8 @@ wget ${AMDGPU_ROCM_PACKAGE_URL}
  sudo apt install ./$AMDGPU_ROCM_PACKAGE_FILE
 #sudo apt install ./amdgpu-install_5.7.50703-1_all.deb
 sudo apt update
-sudo apt install amdgpu-dkms
 sudo apt install rocm
+sudo apt install amdgpu-dkms
 # Check enabled repositories
 sudo grep -rhE ^deb /etc/apt/sources.list*
 
