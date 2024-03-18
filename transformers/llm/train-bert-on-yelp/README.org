@@ -1052,7 +1052,7 @@ pyenv install 3.9
 
 sudo apt autoremove rocm-core
 # Or for version specific packages:
-sudo apt autoremove rocm-core6.0.2
+# sudo apt autoremove rocm-core6.0.2
 sudo apt autoremove amdgpu-install
 sudo apt autoremove amdgpu-dkms
 
@@ -1065,11 +1065,16 @@ sudo rm -rf /var/cache/apt/*
 sudo apt-get clean all
 
 # Restart the system.
+echo "Check any errors, then hit any key to restart the system."
+read
+
 sudo reboot
 
 
+** MY GENERIC env vars based ROCm + Pytorch installer on Ubuntu
 
-** todo Install ROCm 5.7.3
+# Run ROCm uninstall above
+
 
 # Download and convert the package signing key.
 
@@ -1085,6 +1090,7 @@ wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
 #ROCM_VERSION_6060002=5.7.50703-1
 #ROCM_VERSION_602=5.7.3
 #ROCM_VERSION_60=5.7
+
 ROCM_VERSION_6060002=6.0.60002-1
 ROCM_VERSION_602=6.0.2
 ROCM_VERSION_60=6.0
@@ -1135,6 +1141,7 @@ sudo grep -rhE ^deb /etc/apt/sources.list*
 echo "Please reboot system for all settings to take effect."
 
 ** Install PyTorch using the wheel whl files from AMD for ROCm 5.7.3
+
 PYTHON_VERSION_310=310 # COULD BE 39 or 310
 TORCH_VERSION=2.1.2 # COULD BE 2.1.2 or 1.13.1
 TORCHVISION_VERSION=0.16.1 # COULD BE 0.16.1 or 0.14.1
@@ -1158,3 +1165,64 @@ pip3 install --force-reinstall $TORCH_ROCM_WHL_FILE $TORCHVISION_ROCM_WHL_FILE
 
 
 # Note: Possible missing firmware /lib/firmware/amdgpu/vega10_cap.bin BUT NO MENTION OF VEGA8!! MAYBE THAT MEANS THE PACKAGE WAS NOT BUILD FOR IT? See https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/tree/amdgpu for firmware location
+
+
+
+
+* Interesting comments
+
+From https://en.opensuse.org/SDB:AMD_GPGPU
+GCN5.0: The last ROCm with support for GCN 5.0 (Vega 10, Raven, Picasso, gfx900) is 4.5.2. This is the iGPU on 2500U So try ROCm 4.5.2? - no, 4.5.2 is not even on the rocm website!!
+
+
+
+* Another try: Build torch and torchvision locally!!!!
+
+See https://github.com/ROCm/ROCm/issues/2689
+
+terryr@theblob:~$ cat ./local_build.sh 
+
+source /mnt/data/automatic1111/stable-diffusion-webui/venv/bin/activate
+
+export PYTORCH_ROCM_ARCH=gfx1100
+
+export USE_NINJA=1
+export USE_CUDA=0 
+export USE_ROCM=1 
+export USE_LMDB=1 
+export USE_OPENCV=1 
+export MAX_JOBS=10
+
+
+cd pytorch
+git pull --recurse-submodules
+git pull
+
+python tools/amd_build/build_amd.py
+python setup.py build install
+
+./.ci/pytorch/build.sh
+
+
+cd ..
+
+
+cd vision
+git pull --recurse-submodules 
+
+python setup.py develop
+
+python setup.py build install
+
+cd ..
+
+
+cd audio
+
+git pull --recurse-submodules 
+python setup.py develop
+
+python setup.py build install
+
+cd ..
+ 
