@@ -130,7 +130,7 @@ installed, it appears all memory is available for video
 
 * Install ROCm on Linux, for AMD Ryzen APUs
 
-I have AMD APU Ryzen 5 2500U.
+I have AMD APU Ryzen 5 2500U. Lists graphics as  GCN 5th generation , same as the GT versions
 
 This text is only concerned with Linux running AMD software for iGPU (GPU
 integrated in APU).
@@ -1050,11 +1050,11 @@ pyenv install 3.9
 
 ** Uninstall ROCm 6.0.2
 
-sudo apt remove rocm-core
+sudo apt autoremove rocm-core
 # Or for version specific packages:
-sudo apt remove rocm-core6.0.2
-sudo apt remove amdgpu-install
-sudo apt remove amdgpu-dkms
+sudo apt autoremove rocm-core6.0.2
+sudo apt autoremove amdgpu-install
+sudo apt autoremove amdgpu-dkms
 
 # Remove the repositories.
 sudo rm /etc/apt/sources.list.d/rocm.list
@@ -1071,7 +1071,7 @@ sudo reboot
 
 ** todo Install ROCm 5.7.3
 
-Download and convert the package signing key.
+# Download and convert the package signing key.
 
 # Make the directory if it doesn't exist yet.
 # This location is recommended by the distribution maintainers.
@@ -1091,14 +1091,18 @@ ROCM_VERSION_60=6.0
 
 # Add repos
 
-echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/${ROCM_VERSION_602}/ubuntu jammy main" \
+# amdgpu repo for jammy - should use latest, not ${ROCM_VERSION_602}
+# see https://github.com/nktice/AMD-AI - NO NO LUCK
+echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/${ROCM_VERSION_602}/ubuntu jammy main' \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
-sudo apt update
+sudo apt update -y 
 
+# ROCm repository
 echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${ROCM_VERSION_602} jammy main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
 echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
+sudo apt update -y
 
 
 # Check enabled repositories
@@ -1131,15 +1135,26 @@ sudo grep -rhE ^deb /etc/apt/sources.list*
 echo "Please reboot system for all settings to take effect."
 
 ** Install PyTorch using the wheel whl files from AMD for ROCm 5.7.3
-PYTHON_VERSION_310=39 # COULD BE 39 or 310
+PYTHON_VERSION_310=310 # COULD BE 39 or 310
+TORCH_VERSION=2.1.2 # COULD BE 2.1.2 or 1.13.1
+TORCHVISION_VERSION=0.16.1 # COULD BE 0.16.1 or 0.14.1
+
 #TORCH_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/torch-2.1.2+rocm6.0-cp310-cp310-linux_x86_64.whl
 #TORCH_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-5.7/torch-1.13.1+rocm5.7-cp39-cp39-linux_x86_64.whl
- TORCH_ROCM_WHL_FILE=torch-1.13.1+rocm${ROCM_VERSION_60}-cp${PYTHON_VERSION_310}-cp${PYTHON_VERSION_310}-linux_x86_64.whl
- TORCH_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-${ROCM_VERSION_60}/$TORCH_ROCM_WHL_FILE
- TORCHVISION_ROCM_WHL_FILE=torchvision-0.14.1+rocm${ROCM_VERSION_60}-cp${PYTHON_VERSION_310}-cp${PYTHON_VERSION_310}-linux_x86_64.whl
- TORCHVISION_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-${ROCM_VERSION_60}/$TORCHVISION_ROCM_WHL_FILE
+
+#TORCH_ROCM_WHL_FILE=torch-1.13.1+rocm${ROCM_VERSION_60}-cp${PYTHON_VERSION_310}-cp${PYTHON_VERSION_310}-linux_x86_64.whl
+#TORCH_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-${ROCM_VERSION_60}/$TORCH_ROCM_WHL_FILE
+#TORCHVISION_ROCM_WHL_FILE=torchvision-0.14.1+rocm${ROCM_VERSION_60}-cp${PYTHON_VERSION_310}-cp${PYTHON_VERSION_310}-linux_x86_64.whl
+#TORCHVISION_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-${ROCM_VERSION_60}/$TORCHVISION_ROCM_WHL_FILE
+
+ TORCH_ROCM_WHL_FILE=torch-${TORCH_VERSION}+rocm${ROCM_VERSION_60}-cp${PYTHON_VERSION_310}-cp${PYTHON_VERSION_310}-linux_x86_64.whl
+ TORCH_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-${ROCM_VERSION_602}/$TORCH_ROCM_WHL_FILE
+ TORCHVISION_ROCM_WHL_FILE=torchvision-${TORCHVISION_VERSION}+rocm${ROCM_VERSION_60}-cp${PYTHON_VERSION_310}-cp${PYTHON_VERSION_310}-linux_x86_64.whl
+ TORCHVISION_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-${ROCM_VERSION_602}/$TORCHVISION_ROCM_WHL_FILE
 
 wget $TORCH_ROCM_WHL_URL
 wget $TORCHVISION_ROCM_WHL_URL
 pip3 install --force-reinstall $TORCH_ROCM_WHL_FILE $TORCHVISION_ROCM_WHL_FILE
 
+
+# Note: Possible missing firmware /lib/firmware/amdgpu/vega10_cap.bin BUT NO MENTION OF VEGA8!! MAYBE THAT MEANS THE PACKAGE WAS NOT BUILD FOR IT? See https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/tree/amdgpu for firmware location
