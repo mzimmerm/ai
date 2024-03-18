@@ -702,14 +702,14 @@ EOF
 
 sudo zypper ref
 
-# The amdgpu-install version AMDGPU_ROCM_PACKAGE amdgpu-install-6.0.60002 is version of ROCm
-# The ROCm version must match the version in TORCH_ROCM_WHL - rocm6.0
-# The "cp310" in TORCH_ROCM_WHL describes Python 3.10 
-AMDGPU_ROCM_PACKAGE=https://repo.radeon.com/amdgpu-install/6.0.2/sle/15.5/amdgpu-install-6.0.60002-1.noarch.rpm
+# The amdgpu-install version AMDGPU_ROCM_PACKAGE_URL amdgpu-install-6.0.60002 is version of ROCm
+# The ROCm version must match the version in TORCH_ROCM_WHL_URL - rocm6.0
+# The "cp310" in TORCH_ROCM_WHL_URL describes Python 3.10 
+AMDGPU_ROCM_PACKAGE_URL=https://repo.radeon.com/amdgpu-install/6.0.2/sle/15.5/amdgpu-install-6.0.60002-1.noarch.rpm
 
 # Install ROCm using amd install.
 # Should work now when packages added.
-# sudo zypper --no-gpg-checks install $AMDGPU_ROCM_PACKAGE
+# sudo zypper --no-gpg-checks install $AMDGPU_ROCM_PACKAGE_URL
 # does not work : sudo amdgpu-install --usecase=graphics,rocm
 
 # Install ROCM from native package manager
@@ -719,7 +719,7 @@ sudo zypper addrepo https://download.opensuse.org/repositories/devel:/languages:
 sudo zypper install kernel-default-devel
 # See prerequisites. Adding current user to Video and Render groups
 sudo usermod -a -G render,video $LOGNAME
-sudo zypper --no-gpg-checks install $AMDGPU_ROCM_PACKAGE
+sudo zypper --no-gpg-checks install $AMDGPU_ROCM_PACKAGE_URL
 sudo zypper refresh
 sudo zypper install amdgpu-dkms
 
@@ -735,13 +735,13 @@ ML_PROJECT=$HOME/dev/my-projects-source/public-on-github/ai/transformers/llm/tra
 cd $ML_PROJECT
 
 # This is failing in Tumbleweed
-# TORCH_ROCM_WHL=https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/torch-2.1.2+rocm6.0-cp310-cp310-linux_x86_64.whl
+# TORCH_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/torch-2.1.2+rocm6.0-cp310-cp310-linux_x86_64.whl
 
 # Install Torch from nightly wheel files.
-# Alternative for TORCH_ROCM_WHL is to specify nithgtly torch builds; they have WHL files for rocm6.0-cp310. Those seem to be automatically selected when we specify simply:
-TORCH_ROCM_WHL="--index-url https://download.pytorch.org/whl/nightly/rocm6.0"
+# Alternative for TORCH_ROCM_WHL_URL is to specify nithgtly torch builds; they have WHL files for rocm6.0-cp310. Those seem to be automatically selected when we specify simply:
+TORCH_ROCM_WHL_URL="--index-url https://download.pytorch.org/whl/nightly/rocm6.0"
 cd HUGE-NO-BACKUP
-pip3 install --force-reinstall --pre torch torchvision torchaudio $TORCH_ROCM_WHL
+pip3 install --force-reinstall --pre torch torchvision torchaudio $TORCH_ROCM_WHL_URL
 
 # Next do post-torch-install steps
 wget https://raw.githubusercontent.com/wiki/ROCmSoftwarePlatform/pytorch/files/install_kdb_files_for_pytorch_wheels.sh
@@ -892,9 +892,9 @@ echo "Please reboot system for all settings to take effect."
 #
 
 # Install Torch from nightly wheel files.
-TORCH_ROCM_WHL="--index-url https://download.pytorch.org/whl/nightly/rocm6.0"
+TORCH_ROCM_WHL_URL="--index-url https://download.pytorch.org/whl/nightly/rocm6.0"
 cd HUGE-NO-BACKUP
-pip3 install --force-reinstall --pre torch torchvision torchaudio $TORCH_ROCM_WHL
+pip3 install --force-reinstall --pre torch torchvision torchaudio $TORCH_ROCM_WHL_URL
 
 
 * Install rocm and pytorch on Ubuntu
@@ -1013,9 +1013,9 @@ mzimmermann@acer-ryzen-laptop-wifi:~/dev/my-projects-source/public-on-github/ai/
 ** Install PyTorch using NIGHTLY for ROCm 6.0.2 - Fails ERROR: HSA_STATUS_ERROR_MEMORY_APERTURE_VIOLATION: The agent attempted to access memory beyond the largest legal address.
 
 
-TORCH_ROCM_WHL="--index-url https://download.pytorch.org/whl/nightly/rocm6.0"
+TORCH_ROCM_WHL_URL="--index-url https://download.pytorch.org/whl/nightly/rocm6.0"
 cd HUGE-NO-BACKUP
-pip3 install --force-reinstall --pre torch torchvision  $TORCH_ROCM_WHL
+pip3 install --force-reinstall --pre torch torchvision  $TORCH_ROCM_WHL_URL
 
 
 * Back to basics: Install ROCM 5.7, Torch 1.13 (latest Torch 1, latest ROCM 5
@@ -1083,7 +1083,8 @@ ROCM_VERSION_6060002=5.7.50703-1
 ROCM_VERSION_602=5.7.3
 ROCM_VERSION_60=5.7
 AMDGPU_ROCM_PACKAGE_FILE=amdgpu-install_${ROCM_VERSION_6060002}_all.deb
-AMDGPU_ROCM_PACKAGE=https://repo.radeon.com/amdgpu-install/${ROCM_VERSION_602}/ubuntu/jammy/${AMDGPU_ROCM_PACKAGE_FILE}
+AMDGPU_ROCM_PACKAGE_URL=https://repo.radeon.com/amdgpu-install/${ROCM_VERSION_602}/ubuntu/jammy/${AMDGPU_ROCM_PACKAGE_FILE}
+wget ${AMDGPU_ROCM_PACKAGE_URL}
 
 #wget https://repo.radeon.com/amdgpu-install/6.0.2/ubuntu/jammy/amdgpu-install_6.0.60002-1_all.deb
 #wget https://repo.radeon.com/amdgpu-install/5.7.3/ubuntu/jammy/amdgpu-install_5.7.50703-1_all.deb
@@ -1091,8 +1092,9 @@ AMDGPU_ROCM_PACKAGE=https://repo.radeon.com/amdgpu-install/${ROCM_VERSION_602}/u
 
 # Install ROCm using amd install.
 # Should work now when packages added.
-# sudo zypper --no-gpg-checks install $AMDGPU_ROCM_PACKAGE
-sudo apt install ./amdgpu-install_5.7.50703-1_all.deb
+# sudo zypper --no-gpg-checks install $AMDGPU_ROCM_PACKAGE_URL
+ sudo apt install ./$AMDGPU_ROCM_PACKAGE_FILE
+#sudo apt install ./amdgpu-install_5.7.50703-1_all.deb
 sudo apt update
 sudo apt install amdgpu-dkms
 sudo apt install rocm
@@ -1102,14 +1104,15 @@ sudo grep -rhE ^deb /etc/apt/sources.list*
 echo "Please reboot system for all settings to take effect."
 
 ** Install PyTorch using the wheel whl files from AMD for ROCm 5.7.3
+PYTHON_VERSION_310=39 # COULD BE 39 or 310
+#TORCH_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/torch-2.1.2+rocm6.0-cp310-cp310-linux_x86_64.whl
+#TORCH_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-5.7/torch-1.13.1+rocm5.7-cp39-cp39-linux_x86_64.whl
+ TORCH_ROCM_WHL_FILE=torch-1.13.1+rocm${ROCM_VERSION_60}-cp${PYTHON_VERSION_310}-cp${PYTHON_VERSION_310}-linux_x86_64.whl
+ TORCH_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-${ROCM_VERSION_60}/$TORCH_ROCM_WHL_FILE
+ TORCHVISION_ROCM_WHL_FILE=torchvision-0.14.1+rocm${ROCM_VERSION_60}-cp${PYTHON_VERSION_310}-cp${PYTHON_VERSION_310}-linux_x86_64.whl
+ TORCHVISION_ROCM_WHL_URL=https://repo.radeon.com/rocm/manylinux/rocm-rel-${ROCM_VERSION_60}/$TORCHVISION_ROCM_WHL_FILE
 
-#TORCH_ROCM_WHL=https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/torch-2.1.2+rocm6.0-cp310-cp310-linux_x86_64.whl
- TORCH_ROCM_WHL_FILE=torch-1.13.1+rocm5.7-cp39-cp39-linux_x86_64.whl
- TORCH_ROCM_WHL=https://repo.radeon.com/rocm/manylinux/rocm-rel-5.7/$TORCH_ROCM_WHL_FILE
- TORCHVISION_ROCM_WHL_FILE=torchvision-0.14.1+rocm5.7-cp39-cp39-linux_x86_64.whl
- TORCHVISION_ROCM_WHL=https://repo.radeon.com/rocm/manylinux/rocm-rel-5.7/$TORCHVISION_ROCM_WHL_FILE
-
-wget $TORCH_ROCM_WHL
-wget $TORCHVISION_ROCM_WHL
-pip3 install --force-reinstall $TORCH_ROCM_WHL_FILE $TORCHVISION_ROCM_WHL_FILE=
+wget $TORCH_ROCM_WHL_URL
+wget $TORCHVISION_ROCM_WHL_URL
+pip3 install --force-reinstall $TORCH_ROCM_WHL_FILE $TORCHVISION_ROCM_WHL_FILE
 
