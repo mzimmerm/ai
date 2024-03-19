@@ -1207,6 +1207,7 @@ export USE_ROCM=1
 # export USE_OPENCV=1 
 export MAX_JOBS=4
 
+# Note: bc of errors, did: sudo apt install libstdc++-12-dev
 python tools/amd_build/build_amd.py
 echo "build_amd DONE. Next: build install. Any key to continue: "
 python setup.py build install # setup.py develop for quick turnaround
