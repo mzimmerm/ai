@@ -1128,13 +1128,13 @@ wget ${AMDGPU_ROCM_PACKAGE_URL}
 # Install ROCm using amd install.
 # Should work now when packages added.
 # sudo zypper --no-gpg-checks install $AMDGPU_ROCM_PACKAGE_URL
- sudo apt install ./$AMDGPU_ROCM_PACKAGE_FILE
+ sudo apt install --yes ./$AMDGPU_ROCM_PACKAGE_FILE
 #sudo apt install ./amdgpu-install_5.7.50703-1_all.deb
 sudo apt update
 
 # 6. Install amdgpu-dkms and rocm
-sudo apt install amdgpu-dkms
-sudo apt install rocm
+sudo apt install --yes amdgpu-dkms
+sudo apt install --yes rocm
 
 # Check enabled repositories again
 sudo grep -rhE ^deb /etc/apt/sources.list*
@@ -1165,12 +1165,7 @@ wget $TORCHVISION_ROCM_WHL_URL
 pip3 install --force-reinstall $TORCH_ROCM_WHL_FILE $TORCHVISION_ROCM_WHL_FILE
 
 
-# Note: Possible missing firmware /lib/firmware/amdgpu/vega10_cap.bin BUT NO MENTION OF VEGA8!! MAYBE THAT MEANS THE PACKAGE WAS NOT BUILD FOR IT? See https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/tree/amdgpu for firmware location
-
-
-
-
-* Interesting comments
+* Interesting comments regarding AMD GPU architectures
 
 From https://en.opensuse.org/SDB:AMD_GPGPU
 GCN5.0: The last ROCm with support for GCN 5.0 (Vega 10, Raven, Picasso, gfx900) is 4.5.2. This is the iGPU on 2500U So try ROCm 4.5.2? - no, 4.5.2 is not even on the rocm website!!
@@ -1179,28 +1174,36 @@ GCN5.0: The last ROCm with support for GCN 5.0 (Vega 10, Raven, Picasso, gfx900)
 
 * Another try: Build torch and torchvision locally!!!!
 
-See https://github.com/ROCm/ROCm/issues/2689
+# See https://github.com/ROCm/ROCm/issues/2689
 
-terryr@theblob:~$ cat ./local_build.sh 
+cd /dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
+cd LARGE-NO-BACKUP/
 
-source /mnt/data/automatic1111/stable-diffusion-webui/venv/bin/activate
 
-export PYTORCH_ROCM_ARCH=gfx1100
+# activate the right python3 if needed
+
+# Remove old torch, torchvision torchaudio
+pip3 uninstall torch torchvision torchaudio
+
+# export variables for the build
+export PYTORCH_ROCM_ARCH=gfx902
 
 export USE_NINJA=1
 export USE_CUDA=0 
 export USE_ROCM=1 
 export USE_LMDB=1 
 export USE_OPENCV=1 
-export MAX_JOBS=10
+export MAX_JOBS=8
 
+# Clone and build pytorch
+git clone https://github.com/pytorch/pytorch.git
 
 cd pytorch
 git pull --recurse-submodules
 git pull
 
-python tools/amd_build/build_amd.py
-python setup.py build install
+python3 tools/amd_build/build_amd.py
+python3 setup.py build install
 
 ./.ci/pytorch/build.sh
 
@@ -1211,9 +1214,9 @@ cd ..
 cd vision
 git pull --recurse-submodules 
 
-python setup.py develop
+python3 setup.py develop
 
-python setup.py build install
+python3 setup.py build install
 
 cd ..
 
@@ -1221,9 +1224,24 @@ cd ..
 cd audio
 
 git pull --recurse-submodules 
-python setup.py develop
+python3 setup.py develop
 
-python setup.py build install
+python3 setup.py build install
 
 cd ..
+
+
+
+
+Note:
+
+mzimmermann@acer-ryzen-laptop-wifi:~$ apip3 uninstall torch torchvision torchaudio
+Command 'apip3' not found, did you mean:
+  command 'pip3' from deb python3-pip (22.0.2+dfsg-1ubuntu0.3)
+Try: sudo apt install <deb name>
+mzimmermann@acer-ryzen-laptop-wifi:~$ pip3 show torch | grep Requires
+Requires: filelock, fsspec, jinja2, networkx, sympy, typing-extensions
+mzimmermann@acer-ryzen-laptop-wifi:~$ pip3 show torchvision | grep Requires
+Requires: numpy, pillow, requests, torch
+
  
