@@ -1172,15 +1172,107 @@ GCN5.0: The last ROCm with support for GCN 5.0 (Vega 10, Raven, Picasso, gfx900)
 
 
 
+
+* Note: Dependencies of torch, torchvision, torchaudio
+
+mzimmermann@acer-ryzen-laptop-wifi:~$ apip uninstall torch torchvision torchaudio
+Command 'apip3' not found, did you mean:
+  command 'pip3' from deb python3-pip (22.0.2+dfsg-1ubuntu0.3)
+Try: sudo apt install <deb name>
+mzimmermann@acer-ryzen-laptop-wifi:~$ pip show torch | grep Requires
+Requires: filelock, fsspec, jinja2, networkx, sympy, typing-extensions
+mzimmermann@acer-ryzen-laptop-wifi:~$ pip show torchvision | grep Requires
+Requires: numpy, pillow, requests, torch
+
+
+* Using Anaconda instead of Pyenv to install and build Pytorch
+
+** Install Anaconda in userspace; create and activate conda environment
+
+Following steps in https://docs.anaconda.com/free/anaconda/install/linux/
+
+# Install prerequisits
+sudo apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6
+
+# Install anaconda - software which installs Python and R.
+# Apart from Python and R, it also provides other executables,
+#   most importantly 'conda'. 
+#   'conda' is a package manager (like pip), AND environment manager (line pyenv)
+#
+cd ~/tmp
+PREFIX=~/software/anaconda
+mkdir $PREFIX
+wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh
+bash ~/Downloads/Anaconda3-2024.02-1-Linux-x86_64.sh
+#  - Running the above starts a command-line installer,
+#    asking questions. I did the following:
+#    1. Installed to ~/software/anaconda
+#    2. Update shell profile to automatically initialize conda? yes
+#
+
+# Start a new shell (to pick up changed path)!
+# All steps below are in the new shell.
+
+
+# Check what Python is available in anaconda.
+# (base) mzimmermann@acer-ryzen-laptop-wifi:~/tmp$ which conda
+# /home/mzimmermann/software/anaconda/bin/conda
+# (base) mzimmermann@acer-ryzen-laptop-wifi:~/tmp$ which python
+# /home/mzimmermann/software/anaconda/bin/python
+# (base) mzimmermann@acer-ryzen-laptop-wifi:~/tmp$ which python3
+# /home/mzimmermann/software/anaconda/bin/python3
+# (base) mzimmermann@acer-ryzen-laptop-wifi:~/tmp$ python --version
+# Python 3.11.7
+# (base) mzimmermann@acer-ryzen-laptop-wifi:~/tmp$ python3 --version
+# Python 3.11.7
+
+
+# Examples of using 'conda' as 'package manager'
+#
+#   - conda install scikit-learn-intelex
+
+# Use 'conda' as 'environment manager' to create environment 
+# named 'conda-env-torch-build-py310'. This environment contains fully 
+# a separate installation of Python3.10, used when the 
+# environment is 'activated'. See 'activation' below
+# Consequences:
+#   - Python3.10 is installed in:
+#       ~/software/anaconda/envs/conda-env-torch-build-py310/lib/python3.10
+#   - Python3.10 is on the path in:
+#       ~/software/anaconda/envs/conda-env-torch-build-py310/bin
+#   - Python3.10 packages are in:
+#       ~/software/anaconda/envs/conda-env-torch-build-py310/lib/python3.10/site-packages
+#   - After used activates conda-env-torch-build-py310,
+#     this Python3.10 will be used. See next step re: activation
+#
+
+conda create --name conda-env-torch-build-py310 python=3.10
+
+# Activate conda-env-torch-build-py310, which will have the following consequences while the enviroment is active:
+#   - When typing 'python' or 'python3', Python3.10 in 
+#       ~/software/anaconda/envs/conda-env-torch-build-py310/bin
+#     is found and executed
+#   - Packages installed (using conda or pip) will be copied to 
+#        ~/software/anaconda/envs/conda-env-torch-build-py310/lib/python3.10/site-packages
+#     The packages will be also found there 
+#     when a Python program imports them in code such as 'import somepackage'.
+#   - 
+conda activate conda-env-torch-build-py310
+
+
+
 * Another try: Build torch and torchvision from git locally!!!!
 
 # See https://github.com/ROCm/ROCm/issues/2689
 
-cd ~/dev/my-projects-source/public-on-github/ai/transformers/llm/train-bert-on-yelp
-cd LARGE-NO-BACKUP/
+# Activate the conda environment we prepared for torch building
+conda activate conda-env-torch-build-py310
+
+# Change to directory where we checkout and build torch
+cd /home/mzimmermann/software/python/build-from-source/pytorch-related/
 
 # Remove old torch, torchvision torchaudio
-pip uninstall torch torchvision torchaudio
+conda uninstall torch torchvision torchaudio
 
 # Clone and build pytorch
 git clone --recursive https://github.com/pytorch/pytorch
@@ -1190,9 +1282,9 @@ git submodule sync
 git submodule update --init --recursive
 
 # install after clone and pull
-pip install cmake ninja
+conda install cmake ninja
 pip install -r requirements.txt
-
+conda install intel::mkl-static intel::mkl-include
 
 echo "Pull done. Next: build_amd.py and build install. Any key to continue: "
 read
@@ -1200,40 +1292,48 @@ read
 # export variables for the build
 export PYTORCH_ROCM_ARCH=gfx902
 
-# export USE_NINJA=1
+export USE_NINJA=1
 export USE_CUDA=0 
 export USE_ROCM=1 
 # export USE_LMDB=1 
 # export USE_OPENCV=1 
 export MAX_JOBS=4
+# me v
+export ROCM_PATH=/opt/rocm
+export BUILD_CAFFE2=0
 
 # Note: bc of errors, did: sudo apt install libstdc++-12-dev
 python tools/amd_build/build_amd.py
+
 echo "build_amd DONE. Next: build install. Any key to continue: "
-python setup.py build install # setup.py develop for quick turnaround
-
-echo "build_amd.py done. Next: ./.ci/pytorch/build.sh. Any key to continue: "
 read
+
+# to start from clean: git clean -fd; git submodule foreach --recursive git reset --hard
+
+
+export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
+# setup.py develop for quick turnaround; setup.py build install for one time
+USE_ROCM=1 python setup.py develop 
 
 cd ..
 
-echo "torch done Next: vision. Any key to continue: "
-read
-
-# Clone and build vision
-git clone https://github.com/pytorch/vision.git
-
-echo "Vision clone done. Next: pull submodules, build, install. Any key to continue: "
-read
-
-cd vision
-git pull --recurse-submodules 
-
-python setup.py develop
-
-python setup.py build install
-
-cd ..
+#echo "torch done Next: vision. Any key to continue: "
+#read
+#
+## Clone and build vision
+#git clone https://github.com/pytorch/vision.git
+#
+#echo "Vision clone done. Next: pull submodules, build, install. Any key to continue: "
+#read
+#
+#cd vision
+#git pull --recurse-submodules 
+#
+#python setup.py develop
+#
+#python setup.py build install
+#
+#cd ..
 
 #echo "vision done Next: audio. Any key to continue: "
 #read
@@ -1256,15 +1356,3 @@ cd ..
 
 
 
-Note:
-
-mzimmermann@acer-ryzen-laptop-wifi:~$ apip uninstall torch torchvision torchaudio
-Command 'apip3' not found, did you mean:
-  command 'pip3' from deb python3-pip (22.0.2+dfsg-1ubuntu0.3)
-Try: sudo apt install <deb name>
-mzimmermann@acer-ryzen-laptop-wifi:~$ pip show torch | grep Requires
-Requires: filelock, fsspec, jinja2, networkx, sympy, typing-extensions
-mzimmermann@acer-ryzen-laptop-wifi:~$ pip show torchvision | grep Requires
-Requires: numpy, pillow, requests, torch
-
- 
