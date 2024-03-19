@@ -1073,20 +1073,18 @@ sudo reboot
 
 ** MY GENERIC env vars based ROCm + Pytorch installer on Ubuntu
 
-# Run ROCm uninstall above
+# 1. Run ROCm uninstall above, then reboot
 
 
-# Download and convert the package signing key.
-
-# Make the directory if it doesn't exist yet.
-# This location is recommended by the distribution maintainers.
+# 2. Download and convert the package signing key.
 sudo mkdir --parents --mode=0755 /etc/apt/keyrings
 
 # Download the key, convert the signing-key to a full
 # keyring required by apt and store in the keyring directory
 wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-		
+
+# 3. Set variables defining the ROCm package and URL names		
 #ROCM_VERSION_6060002=5.7.50703-1
 #ROCM_VERSION_602=5.7.3
 #ROCM_VERSION_60=5.7
@@ -1095,11 +1093,11 @@ ROCM_VERSION_6060002=6.0.60002-1
 ROCM_VERSION_602=6.0.2
 ROCM_VERSION_60=6.0
 
-# Add repos
+# 4. Add repositories
 
 # amdgpu repo for jammy - should use latest, not ${ROCM_VERSION_602}
 # see https://github.com/nktice/AMD-AI - NO NO LUCK
-echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/${ROCM_VERSION_602}/ubuntu jammy main' \
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/${ROCM_VERSION_602}/ubuntu jammy main" \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
 sudo apt update -y 
 
@@ -1114,7 +1112,7 @@ sudo apt update -y
 # Check enabled repositories
 sudo grep -rhE ^deb /etc/apt/sources.list*
 
-# Install AMDGPU packages
+# 5. Download and install AMDGPU packages
 sudo apt install "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)"
 # See prerequisites. Adding current user to Video and Render groups
 sudo usermod -a -G render,video $LOGNAME
@@ -1133,9 +1131,12 @@ wget ${AMDGPU_ROCM_PACKAGE_URL}
  sudo apt install ./$AMDGPU_ROCM_PACKAGE_FILE
 #sudo apt install ./amdgpu-install_5.7.50703-1_all.deb
 sudo apt update
+
+# 6. Install amdgpu-dkms and rocm
 sudo apt install amdgpu-dkms
 sudo apt install rocm
-# Check enabled repositories
+
+# Check enabled repositories again
 sudo grep -rhE ^deb /etc/apt/sources.list*
 
 echo "Please reboot system for all settings to take effect."
