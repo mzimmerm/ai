@@ -770,7 +770,7 @@ sudo docker run -it --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
 
 In the docker prompt, run:
 
-HSA_OVERRIDE_GFX_VERSION=9.0.0 python -c "import torch; cuda0 = torch.device('cuda:0');print(torch.ones([2, 4], dtype=torch.float64, device=cuda0)); print('done')"
+export HSA_OVERRIDE_GFX_VERSION=9.0.0; python -c "import torch; cuda0 = torch.device('cuda:0');print(torch.ones([2, 4], dtype=torch.float64, device=cuda0)); print('done')"
 
 BUT IF FAILE WITH SAME ERROR: HSA_STATUS_ERROR_EXCEPTION: An HSAIL operation resulted in a hardware exception. code: 0x1016
 
@@ -842,7 +842,7 @@ PYTORCH_ROCM_ARCH=gfx900 USE_ROCM=1 MAX_JOBS=4 python setup.py install
 git clone https://github.com/pytorch/examples.git
 cd examples/mnist
 pip install -r requirements.txt
-HSA_OVERRIDE_GFX_VERSION=9.0.0 python main.py
+export HSA_OVERRIDE_GFX_VERSION=9.0.0; python main.py
 
  the above failed *THIS BUILD OK BUT FAILED - HSA_STATUS_ERROR_MEMORY_APERTURE_VIOLATION*
 
@@ -1205,9 +1205,10 @@ export USE_CUDA=0
 export USE_ROCM=1 
 # export USE_LMDB=1 
 # export USE_OPENCV=1 
-# export MAX_JOBS=8
+export MAX_JOBS=4
 
 python tools/amd_build/build_amd.py
+echo "build_amd DONE. Next: build install. Any key to continue: "
 python setup.py build install # setup.py develop for quick turnaround
 
 echo "build_amd.py done. Next: ./.ci/pytorch/build.sh. Any key to continue: "
