@@ -1265,10 +1265,13 @@ conda activate conda-env-torch-build-py310
 
 # See https://github.com/ROCm/ROCm/issues/2689
 
-# Install gcc13 - NOT needed, gcc-9 and higher is fine
-#sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-#sudo apt-get update
-#sudo apt-get install gcc-13 g++-13
+# Install gcc13 
+sudo apt install software-properties-common
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt-get install gcc-13 g++-13
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13
+
 
 # Activate the conda environment we prepared for torch building
 conda activate conda-env-torch-build-py310
@@ -1288,8 +1291,8 @@ cd pytorch
 
 # install after clone and pull
 conda install cmake ninja
-pip install -r requirements.txt
 conda install intel::mkl-static intel::mkl-include
+pip install -r requirements.txt
 
 # make triton   # described as optional
 
@@ -1311,11 +1314,17 @@ python tools/amd_build/build_amd.py
 echo "build_amd DONE. Next: build install. Any key to continue: "
 read
 
-# to start from clean: git clean -fd; git submodule foreach --recursive git reset --hard
-
+# to start from clean: git clean -fd .; git restore .; git submodule foreach --recursive git reset --hard; git checkout -- third_party
+# OR : git rm -rf --cached third_party/kineto
 
 export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
 # setup.py develop for quick turnaround; setup.py build install for one time
+
+#NO export CFLAGS="$CFLAGS -D__HIP_PLATFORM_AMD__"
+#NO export CXXFLAGS="$CXXFLAGS -D__HIP_PLATFORM_AMD__"
+
+# changed 1: In caffe2/Makefiles?? g/HIP_PLAFORM_HCC/s/HIP_PLATFORM_AMD/g : this fixed the error requiring exactly one of __HIP_PLATFORM_AMD__ OR __HIP_PLATFORM_NVIDIA__
+
 
 USE_CUDA=0 \
 USE_ROCM=1 \
@@ -1323,8 +1332,8 @@ PYTORCH_ROCM_ARCH=gfx902 \
 USE_ROCM_KERNEL_ASSERT=1 \
 USE_NINJA=1 \
 ROCM_PATH=/opt/rocm \
-MAX_JOBS=4 \
-DEBUG=1 \
+MAX_JOBS=2 \
+DEBUG=0 \
 USE_DISTRIBUTED=0 \
 USE_MKLDNN=0 \
 BUILD_TEST=0 \
@@ -1349,6 +1358,7 @@ USE_FLASH_ATTENTION=0 \
 USE_MEM_EFF_ATTENTION=0 \
 \
 python setup.py develop
+
 
 cd ..
 
@@ -1388,12 +1398,33 @@ cd ..
 #
 #cd ..
 
-During build:
+
+
+** ERRORS During build:
+
 
 CMake Warning:
   Manually-specified variables were not used by the project:
 
     USE_NINJA
 
+
+/usr/bin/c++ -DROCM_DEFAULT_DIR=\"/opt/rocm\" -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/unittest/Conversion/TritonGPUToLLVM -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/unittest/Conversion/TritonGPUToLLVM -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/include -I/home/mzimmermann/.triton/pybind11/pybind11-2.11.1/include -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/. -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/python/src -I/home/mzimmermann/software/anaconda/envs/conda-env-torch-build-py310/include/python3.10 -I/home/mzimmermann/.triton/llvm/llvm-49af6502-ubuntu-x64/include -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/include -isystem /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/_deps/googletest-src/googletest/include -isystem /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/_deps/googletest-src/googletest -isystem /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/_deps/googletest-src/googlemock/include -isystem /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/_deps/googletest-src/googlemock -isystem /home/mzimmermann/software/anaconda/envs/conda-env-torch-build-py310/include -D__STDC_FORMAT_MACROS  -fPIC -std=gnu++17 -fvisibility=hidden -fvisibility-inlines-hidden -DUSE_ROCM -Wno-unused-result -Wno-attributes -DTRITONGPU_DEFAULT_WARPSIZE=64 -Werror -Wno-covered-switch-default -O2 -g -std=gnu++17 -MD -MT unittest/Conversion/TritonGPUToLLVM/CMakeFiles/TestEmitIndices.dir/DumpLayout.cpp.o -MF unittest/Conversion/TritonGPUToLLVM/CMakeFiles/TestEmitIndices.dir/DumpLayout.cpp.o.d -o unittest/Conversion/TritonGPUToLLVM/CMakeFiles/TestEmitIndices.dir/DumpLayout.cpp.o -c /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/unittest/Conversion/TritonGPUToLLVM/DumpLayout.cpp
+
+/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/unittest/Conversion/TritonGPUToLLVM/DumpLayout.cpp:384:1: fatal error: opening dependency file unittest/Conversion/TritonGPUToLLVM/CMakeFiles/TestEmitIndices.dir/DumpLayout.cpp.o.d: No such file or directory
+  384 | } // namespace mlir
+      | ^
+compilation terminated.
+
+
+Error in output: `GLIBCXX_3.4.30'
+
+in /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/unittest/Analysis/TestTritonAnalysis: /home/mzimmermann/software/anaconda/envs/conda-env-torch-build-py310/lib/libstdc++.so.6: version `GLIBCXX_3.4.30' not found (required by /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/unittest/Analysis/TestTritonAnalysis)
+CMake Error at /home/mzimmermann/software/anaconda/envs/conda-env-torch-build-py310/share/cmake-3.26/Modules/GoogleTestAddTests.cmake:112 (message):
+  Error running test executable.
+
+    Path: '/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/unittest/Analysis/TestTritonAnalysis'
+    Result: 1
+    Output:
 
 
