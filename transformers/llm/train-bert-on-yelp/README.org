@@ -1265,6 +1265,11 @@ conda activate conda-env-torch-build-py310
 
 # See https://github.com/ROCm/ROCm/issues/2689
 
+# Install gcc13 - NOT needed, gcc-9 and higher is fine
+#sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+#sudo apt-get update
+#sudo apt-get install gcc-13 g++-13
+
 # Activate the conda environment we prepared for torch building
 conda activate conda-env-torch-build-py310
 
@@ -1278,29 +1283,27 @@ conda uninstall torch torchvision torchaudio
 git clone --recursive https://github.com/pytorch/pytorch
 cd pytorch
 # if you are updating an existing checkout
-git submodule sync
-git submodule update --init --recursive
+# git submodule sync
+# git submodule update --init --recursive
 
 # install after clone and pull
 conda install cmake ninja
 pip install -r requirements.txt
 conda install intel::mkl-static intel::mkl-include
 
+# make triton   # described as optional
+
 echo "Pull done. Next: build_amd.py and build install. Any key to continue: "
 read
 
-# export variables for the build
-export PYTORCH_ROCM_ARCH=gfx902
+# export variables for the build 
+#export PYTORCH_ROCM_ARCH=gfx902
+#export USE_NINJA=1
+#export USE_CUDA=0 
+#export USE_ROCM=1 
+#export MAX_JOBS=4
+#export ROCM_PATH=/opt/rocm
 
-export USE_NINJA=1
-export USE_CUDA=0 
-export USE_ROCM=1 
-# export USE_LMDB=1 
-# export USE_OPENCV=1 
-export MAX_JOBS=4
-# me v
-export ROCM_PATH=/opt/rocm
-export BUILD_CAFFE2=0
 
 # Note: bc of errors, did: sudo apt install libstdc++-12-dev
 python tools/amd_build/build_amd.py
@@ -1313,7 +1316,39 @@ read
 
 export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
 # setup.py develop for quick turnaround; setup.py build install for one time
-USE_ROCM=1 python setup.py develop 
+
+USE_CUDA=0 \
+USE_ROCM=1 \
+PYTORCH_ROCM_ARCH=gfx902 \
+USE_ROCM_KERNEL_ASSERT=1 \
+USE_NINJA=1 \
+ROCM_PATH=/opt/rocm \
+MAX_JOBS=4 \
+DEBUG=1 \
+USE_DISTRIBUTED=0 \
+USE_MKLDNN=0 \
+BUILD_TEST=0 \
+USE_FBGEMM=0 \
+USE_NNPACK=0 \
+USE_QNNPACK=0 \
+USE_XNNPACK=0 \
+USE_CUDNN=0 \
+USE_CUSPARSELT=0 \
+USE_FBGEMM=0 \
+USE_KINETO=0 \
+USE_MKLDNN=0 \
+USE_DISTRIBUTED=0 \
+USE_TENSORPIPE=0 \
+USE_GLOO=0 \
+USE_MPI=0 \
+USE_SYSTEM_NCCL=0 \
+BUILD_CAFFE2_OPS=0 \
+BUILD_CAFFE2=0 \
+USE_OPENMP=0 \
+USE_FLASH_ATTENTION=0 \
+USE_MEM_EFF_ATTENTION=0 \
+\
+python setup.py develop
 
 cd ..
 
@@ -1353,6 +1388,12 @@ cd ..
 #
 #cd ..
 
+During build:
+
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    USE_NINJA
 
 
 
