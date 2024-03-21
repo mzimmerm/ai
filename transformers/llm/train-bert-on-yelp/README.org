@@ -1338,12 +1338,16 @@ read
 #NO export CFLAGS="$CFLAGS -D__HIP_PLATFORM_AMD__"
 #NO export CXXFLAGS="$CXXFLAGS -D__HIP_PLATFORM_AMD__"
 
-# setup options removed: USE_ROCM_KERNEL_ASSERT=1 \
+# setup options 
+#   removed: USE_ROCM_KERNEL_ASSERT=1 \
+#   NO NOT IN SETUP added:   TORCH_USE_HIP_DSA=1
+
+# ONE MORE TRY: This article https://medium.com/@rafaelmanzanom/ditching-cuda-for-amd-rocm-for-more-accessible-llm-inference-ryzen-apus-edition-92c3649f8f7d tells us to use PYTORCH_ROCM_ARCH=gfx900 NOT gfx902 when building PYTORCH. ALSO they tell us to build magma. We do magma later. 
 
 export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
 USE_CUDA=0 \
 USE_ROCM=1 \
-PYTORCH_ROCM_ARCH=gfx902 \
+PYTORCH_ROCM_ARCH=gfx900 \
 USE_NINJA=1 \
 ROCM_PATH=/opt/rocm \
 MAX_JOBS=2 \
@@ -1412,9 +1416,20 @@ cd ..
 #
 #cd ..
 
+** NOTE FROM COPILOT
+
+What is the difference between AMD architectures named gfx906 and gfx902?
+Copilot
+The gfx906 and gfx902 are identifiers for different GPU architectures from AMD.
+
+The gfx902 architecture is associated with the Radeon Vega 8 GPU found in the AMD Ryzen 5 2500U1.
+
+The gfx906 architecture, on the other hand, is associated with the AMD Instinct MI50 GPU2. This GPU provides 13.3 TFLOPs in FP32 operations2.
+
+One of the key differences between these architectures is their support for the ROCm platform. According to AMD, the minimum requirement for ROCm is the gfx906 platform2, implying that gfx902 may not be officially supported.
 
 
-** ERRORS During build:
+** Build result: SUCCESS 2024-03-21. WARNINGS FROM LOG
 
 *** CMake Warning at cmake/Dependencies.cmake:1693 (message):
   Not compiling with MAGMA.  Suppress this warning with -DUSE_MAGMA=OFF
@@ -1424,6 +1439,66 @@ cd ..
     USE_MEM_EFF_ATTENTION
     USE_NINJA
 
+** TEST RESULT: FAILED
+
+ *Unfortunately, while build succeeded, the error is the same SO IT IS LIKELY NOT POSSIBLE TO CREATE A WORKING PYTORCH BUILD FOR gfx902*
+
+ (conda-env-torch-build-py310) mzimmermann@acer-ryzen-laptop-wifi:~/software/pytorch$ HSA_OVERRIDE_GFX_VERSION=9.0.0 python -c "import torch; cuda0 = torch.device('cuda:0');print(torch.ones([2, 4], dtype=torch.float64, device=cuda0)); print('done')"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+RuntimeError: HIP error: shared object initialization failed
+HIP kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing HIP_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_HIP_DSA` to enable device-side assertions.
+
+** Interesting from searching code
+
+./.ci/pytorch/build.sh:  if [[ -n "$CI" && -z "$PYTORCH_ROCM_ARCH" ]]; then
+./.ci/pytorch/build.sh:      echo "Limiting PYTORCH_ROCM_ARCH to gfx906 for CI builds"
+./.ci/pytorch/build.sh:      export PYTORCH_ROCM_ARCH="gfx906"
+
+
+* LATEST: INSTALL ROCM-DKMS and magma
+
+
+sudo apt install libstdc++-13-dev rock-dkms rocm-dev rocm-libs miopen-hip rccl rocthrust hipcub roctracer-dev # cmake
+
+export PYTORCH_ROCM_ARCH=gfx900
+
+# "install" hipMAGMA into /opt/rocm/magma by copying after build
+cd ~/software
+git clone https://bitbucket.org/icl/magma.git
+pushd magma
+# Fixes memory leaks of magma found while executing linalg UTs
+git checkout 5959b8783e45f1809812ed96ae762f38ee701972
+cp make.inc-examples/make.inc.hip-gcc-mkl make.inc
+echo 'LIBDIR += -L$(MKLROOT)/lib' >> make.inc
+echo 'LIB += -Wl,--enable-new-dtags -Wl,--rpath,/opt/rocm/lib -Wl,--rpath,$(MKLROOT)/lib -Wl,--rpath,/opt/rocm/magma/lib' >> make.inc
+echo 'DEVCCFLAGS += --gpu-max-threads-per-block=256' >> make.inc
+export PATH="${PATH}:/opt/rocm/bin"
+if [[ -n "$PYTORCH_ROCM_ARCH" ]]; then
+  amdgpu_targets=`echo $PYTORCH_ROCM_ARCH | sed 's/;/ /g'`
+else
+  amdgpu_targets=`rocm_agent_enumerator | grep -v gfx000 | sort -u | xargs`
+fi
+for arch in $amdgpu_targets; do
+  echo "DEVCCFLAGS += --amdgpu-target=$arch" >> make.inc
+done
+# hipcc with openmp flag may cause isnan() on __device__ not to be found; depending on context, compiler may attempt to match with host definition
+sed -i 's/^FOPENMP/#FOPENMP/g' make.inc
+make -f make.gen.hipMAGMA -j $(nproc)
+LANG=C.UTF-8 make lib/libmagma.so -j $(nproc) MKLROOT=/home/mzimmermann/software/anaconda
+make testing/testing_dgemm -j $(nproc) MKLROOT=/home/mzimmermann/software/anaconda
+#popd
+#sudo mv magma /opt/rocm
+
+
+Also checking device:
+
+sudo find /sys/module/amdgpu/parameters/ -type f -name '*' -exec sh -c 'filename=${1%.*}; echo "File: ${filename##*/}"; cat "$1"' sh {} \;
+
+
+ALSO DID: sudo modprobe amdgpu vramlimit=0 # REBOOT
 
   
 
