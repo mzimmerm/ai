@@ -1277,59 +1277,73 @@ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave 
 conda activate conda-env-torch-build-py310
 
 # Change to directory where we checkout and build torch
-cd /home/mzimmermann/software/python/build-from-source/pytorch-related/
+cd /home/mzimmermann/software/
 
 # Remove old torch, torchvision torchaudio
 conda uninstall torch torchvision torchaudio
 
 # Clone and build pytorch
-git clone --recursive https://github.com/pytorch/pytorch
+# git clone --recursive https://github.com/pytorch/pytorch
+git clone --recursive git@github.com:ROCm/pytorch # https://github.com/ROCm/pytorch
 cd pytorch
-# if you are updating an existing checkout
-# git submodule sync
-# git submodule update --init --recursive
+git fetch --all --tags
+git checkout origin/release/2.1_with_triton_fixes -b amd-release-2.1_with_triton_fixes
+# the checkout has third_part now out of date - modified, so remove and re-checkout
+# if you are updating an existing checkout - I think this should always run!!
+git submodule sync                       # still clean after this command
+git submodule update --init --recursive  # still clean after this command
 
-# install after clone and pull
+
+# To get back to original state: 
+# rm -r third_party torch aten c10 caffe2 binaries modules
+# git checkout -- third_party torch aten c10 caffe2 binaries modules
+# Also consider: git clean -fd .; git restore .; git submodule foreach --recursive git reset --hard; git checkout -- third_party
+
+
+# Install python packages after clone and pull
 conda install cmake ninja
 conda install intel::mkl-static intel::mkl-include
-pip install -r requirements.txt
+pip install -r requirements.txt # still clean
 
-# make triton   # described as optional
+# described as optional, but I did it. 
+# Installs pytorch-triton in conda site-packages
+make triton
+
+#Looking in indexes: https://download.pytorch.org/whl/nightly/
+#Collecting pytorch-triton==2.1.0+e6216047b8
+#  Downloading https://download.pytorch.org/whl/nightly/pytorch_triton-2.1.0%2Be6216047b8-cp310-cp310-linux_x86_64.whl (96.4 MB)
+#Requirement already satisfied: filelock in /home/mzimmermann/software/anaconda/envs/conda-env-torch-build-py310/lib/python3.10/site-packages #(from pytorch-triton==2.1.0+e6216047b8) (3.13.1)
+#Installing collected packages: pytorch-triton
+#  Attempting uninstall: pytorch-triton
+#    Found existing installation: pytorch-triton 3.0.0+a9bc1a3647
+#    Uninstalling pytorch-triton-3.0.0+a9bc1a3647:
+#      Successfully uninstalled pytorch-triton-3.0.0+a9bc1a3647
+#Successfully installed pytorch-triton-2.1.0+e6216047b8
+
 
 echo "Pull done. Next: build_amd.py and build install. Any key to continue: "
 read
 
-# export variables for the build 
-#export PYTORCH_ROCM_ARCH=gfx902
-#export USE_NINJA=1
-#export USE_CUDA=0 
-#export USE_ROCM=1 
-#export MAX_JOBS=4
-#export ROCM_PATH=/opt/rocm
+# Run AMD build first. changes stuff in caffe2, third_party etc.
+# Changes at least: In Cmake*  __HIP_PLATFORM_HCC__ to  __HIP_PLATFORM_AMD__
 
-
-# Note: bc of errors, did: sudo apt install libstdc++-12-dev
 python tools/amd_build/build_amd.py
 
 echo "build_amd DONE. Next: build install. Any key to continue: "
 read
 
-# to start from clean: git clean -fd .; git restore .; git submodule foreach --recursive git reset --hard; git checkout -- third_party
-# OR : git rm -rf --cached third_party/kineto
-
-export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
-# setup.py develop for quick turnaround; setup.py build install for one time
+# RUN SETUP: run 'setup.py develop' for quick turnaround
+#                'setup.py build install' for one time
 
 #NO export CFLAGS="$CFLAGS -D__HIP_PLATFORM_AMD__"
 #NO export CXXFLAGS="$CXXFLAGS -D__HIP_PLATFORM_AMD__"
 
-# changed 1: In caffe2/Makefiles?? g/HIP_PLAFORM_HCC/s/HIP_PLATFORM_AMD/g : this fixed the error requiring exactly one of __HIP_PLATFORM_AMD__ OR __HIP_PLATFORM_NVIDIA__
+# setup options removed: USE_ROCM_KERNEL_ASSERT=1 \
 
-
+export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
 USE_CUDA=0 \
 USE_ROCM=1 \
 PYTORCH_ROCM_ARCH=gfx902 \
-USE_ROCM_KERNEL_ASSERT=1 \
 USE_NINJA=1 \
 ROCM_PATH=/opt/rocm \
 MAX_JOBS=2 \
@@ -1402,29 +1416,14 @@ cd ..
 
 ** ERRORS During build:
 
+*** CMake Warning at cmake/Dependencies.cmake:1693 (message):
+  Not compiling with MAGMA.  Suppress this warning with -DUSE_MAGMA=OFF
+  
+*** CMake Warning: Manually-specified variables were not used by the project:
 
-CMake Warning:
-  Manually-specified variables were not used by the project:
-
+    USE_MEM_EFF_ATTENTION
     USE_NINJA
 
 
-/usr/bin/c++ -DROCM_DEFAULT_DIR=\"/opt/rocm\" -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/unittest/Conversion/TritonGPUToLLVM -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/unittest/Conversion/TritonGPUToLLVM -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/include -I/home/mzimmermann/.triton/pybind11/pybind11-2.11.1/include -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/. -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/python/src -I/home/mzimmermann/software/anaconda/envs/conda-env-torch-build-py310/include/python3.10 -I/home/mzimmermann/.triton/llvm/llvm-49af6502-ubuntu-x64/include -I/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/include -isystem /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/_deps/googletest-src/googletest/include -isystem /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/_deps/googletest-src/googletest -isystem /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/_deps/googletest-src/googlemock/include -isystem /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/_deps/googletest-src/googlemock -isystem /home/mzimmermann/software/anaconda/envs/conda-env-torch-build-py310/include -D__STDC_FORMAT_MACROS  -fPIC -std=gnu++17 -fvisibility=hidden -fvisibility-inlines-hidden -DUSE_ROCM -Wno-unused-result -Wno-attributes -DTRITONGPU_DEFAULT_WARPSIZE=64 -Werror -Wno-covered-switch-default -O2 -g -std=gnu++17 -MD -MT unittest/Conversion/TritonGPUToLLVM/CMakeFiles/TestEmitIndices.dir/DumpLayout.cpp.o -MF unittest/Conversion/TritonGPUToLLVM/CMakeFiles/TestEmitIndices.dir/DumpLayout.cpp.o.d -o unittest/Conversion/TritonGPUToLLVM/CMakeFiles/TestEmitIndices.dir/DumpLayout.cpp.o -c /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/unittest/Conversion/TritonGPUToLLVM/DumpLayout.cpp
-
-/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/src/third_party/triton/unittest/Conversion/TritonGPUToLLVM/DumpLayout.cpp:384:1: fatal error: opening dependency file unittest/Conversion/TritonGPUToLLVM/CMakeFiles/TestEmitIndices.dir/DumpLayout.cpp.o.d: No such file or directory
-  384 | } // namespace mlir
-      | ^
-compilation terminated.
-
-
-Error in output: `GLIBCXX_3.4.30'
-
-in /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/unittest/Analysis/TestTritonAnalysis: /home/mzimmermann/software/anaconda/envs/conda-env-torch-build-py310/lib/libstdc++.so.6: version `GLIBCXX_3.4.30' not found (required by /home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/unittest/Analysis/TestTritonAnalysis)
-CMake Error at /home/mzimmermann/software/anaconda/envs/conda-env-torch-build-py310/share/cmake-3.26/Modules/GoogleTestAddTests.cmake:112 (message):
-  Error running test executable.
-
-    Path: '/home/mzimmermann/software/python/build-from-source/pytorch-related/pytorch/build/aotriton/build/triton_build/unittest/Analysis/TestTritonAnalysis'
-    Result: 1
-    Output:
-
+  
 
