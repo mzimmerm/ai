@@ -914,7 +914,7 @@ So I will not be using pyenv - will use python 3.10.12 native
 sudo apt install "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)"
 # See prerequisites. Adding current user to Video and Render groups
 sudo usermod -a -G render,video $LOGNAME
-wget https://repo.radeon.com/amdgpu-install/6.0.2/ubuntu/jammy/amdgpu-install_6.0.60002-1_all.deb
+wget https://repo.radeon.com/amdgpu-install/6.0.2/ubuntu/${UBUNTU_RELEASE}/amdgpu-install_6.0.60002-1_all.deb
 sudo apt install ./amdgpu-install_6.0.60002-1_all.deb
 sudo apt update
 sudo apt install amdgpu-dkms
@@ -1084,25 +1084,34 @@ sudo mkdir --parents --mode=0755 /etc/apt/keyrings
 wget https://repo.radeon.com/rocm/rocm.gpg.key -O - | \
     gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
 
-# 3. Set variables defining the ROCm package and URL names		
+# 3. Set variables defining the ROCm package and URL names
+UBUNTU_RELEASE=focal # jammy is 22.04 focal is 20.04
+		
 #ROCM_VERSION_6060002=5.7.50703-1
 #ROCM_VERSION_602=5.7.3
 #ROCM_VERSION_60=5.7
 
+#ROCM_VERSION_6060002=6.0.60002-1
+#ROCM_VERSION_602=6.0.2
+#ROCM_VERSION_60=6.0
+
+# v4 have different naming conventions.
+# Need to install Ubuntu 20.04.6 LTS Focal Fossa Changes March 23, 2023
 ROCM_VERSION_6060002=6.0.60002-1
-ROCM_VERSION_602=6.0.2
+ROCM_VERSION_602=
 ROCM_VERSION_60=6.0
 
 # 4. Add repositories
 
 # amdgpu repo for jammy - should use latest, not ${ROCM_VERSION_602}
 # see https://github.com/nktice/AMD-AI - NO NO LUCK
-echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/${ROCM_VERSION_602}/ubuntu jammy main" \
+
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/${ROCM_VERSION_602}/ubuntu ${UBUNTU_RELEASE} main" \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
 sudo apt update -y 
 
 # ROCm repository
-echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${ROCM_VERSION_602} jammy main" \
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${ROCM_VERSION_602} ${UBUNTU_RELEASE} main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
 echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
@@ -1118,11 +1127,11 @@ sudo apt install "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)"
 sudo usermod -a -G render,video $LOGNAME
 
 AMDGPU_ROCM_PACKAGE_FILE=amdgpu-install_${ROCM_VERSION_6060002}_all.deb
-AMDGPU_ROCM_PACKAGE_URL=https://repo.radeon.com/amdgpu-install/${ROCM_VERSION_602}/ubuntu/jammy/${AMDGPU_ROCM_PACKAGE_FILE}
+AMDGPU_ROCM_PACKAGE_URL=https://repo.radeon.com/amdgpu-install/${ROCM_VERSION_602}/ubuntu/${UBUNTU_RELEASE}/${AMDGPU_ROCM_PACKAGE_FILE}
 wget ${AMDGPU_ROCM_PACKAGE_URL}
 
-#wget https://repo.radeon.com/amdgpu-install/6.0.2/ubuntu/jammy/amdgpu-install_6.0.60002-1_all.deb
-#wget https://repo.radeon.com/amdgpu-install/5.7.3/ubuntu/jammy/amdgpu-install_5.7.50703-1_all.deb
+#wget https://repo.radeon.com/amdgpu-install/6.0.2/ubuntu/${UBUNTU_RELEASE}/amdgpu-install_6.0.60002-1_all.deb
+#wget https://repo.radeon.com/amdgpu-install/5.7.3/ubuntu/${UBUNTU_RELEASE}/amdgpu-install_5.7.50703-1_all.deb
 
 
 # Install ROCm using amd install.
@@ -1463,6 +1472,8 @@ Compile with `TORCH_USE_HIP_DSA` to enable device-side assertions.
 
 sudo apt install libstdc++-13-dev rock-dkms rocm-dev rocm-libs miopen-hip rccl rocthrust hipcub roctracer-dev # cmake
 
+THIS MAGMA BUILD NEVER WORKED
+
 export PYTORCH_ROCM_ARCH=gfx900
 
 # "install" hipMAGMA into /opt/rocm/magma by copying after build
@@ -1498,7 +1509,10 @@ Also checking device:
 sudo find /sys/module/amdgpu/parameters/ -type f -name '*' -exec sh -c 'filename=${1%.*}; echo "File: ${filename##*/}"; cat "$1"' sh {} \;
 
 
-ALSO DID: sudo modprobe amdgpu vramlimit=0 # REBOOT
+ALSO DID: 
+sudo modprobe amdgpu vramlimit=0 # REBOOT
+# later: sudo modprobe amdgpu ppfeaturemask=0xfff73fff
+
 
   
 
