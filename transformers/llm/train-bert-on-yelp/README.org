@@ -1097,9 +1097,10 @@ UBUNTU_RELEASE=focal # jammy is 22.04 focal is 20.04
 
 # v4 have different naming conventions.
 # Need to install Ubuntu 20.04.6 LTS Focal Fossa Changes March 23, 2023
-ROCM_VERSION_6060002=6.0.60002-1
-ROCM_VERSION_602=
-ROCM_VERSION_60=6.0
+# amdgpu-install_21.40.2.40502-1_all.deb
+ROCM_VERSION_6060002=40502-1 #  
+ROCM_VERSION_602=21.40.2
+ROCM_VERSION_60=4.5 # this is torch, does not exist, will do manual
 
 # 4. Add repositories
 
@@ -1200,8 +1201,10 @@ Requires: numpy, pillow, requests, torch
 
 Following steps in https://docs.anaconda.com/free/anaconda/install/linux/
 
-# Install prerequisits
+# Install prerequisits Ubunt
 sudo apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6
+# Install prerequisites Tumbleweed - all already installed
+zypper install libXcomposite1 libXi6 libXext6 libXau6 libX11-6 libXrandr2 libXrender1 libXss1 libXtst6 libXdamage1 libXcursor1 libxcb1 libasound2 libX11-xcb1 Mesa-libGL1 Mesa-libEGL1
 
 # Install anaconda - software which installs Python and R.
 # Apart from Python and R, it also provides other executables,
@@ -1210,17 +1213,17 @@ sudo apt-get install libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 
 #
 cd ~/tmp
 PREFIX=~/software/anaconda
-mkdir $PREFIX
+mkdir --parent $PREFIX
 wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh
-bash ~/Downloads/Anaconda3-2024.02-1-Linux-x86_64.sh
+bash ./Anaconda3-2024.02-1-Linux-x86_64.sh
 #  - Running the above starts a command-line installer,
 #    asking questions. I did the following:
 #    1. Installed to ~/software/anaconda
-#    2. Update shell profile to automatically initialize conda? yes
+#    2. Do you wish to update shell profile to automatically initialize conda? yes
 #
 
-# Start a new shell (to pick up changed path)!
-# All steps below are in the new shell.
+#  - Start a new shell (to pick up changed path)!
+#  - Perform checks below - all in the new shell.
 
 
 # Check what Python is available in anaconda.
@@ -1280,7 +1283,9 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt-get update
 sudo apt-get install gcc-13 g++-13
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 --slave /usr/bin/g++ g++ /usr/bin/g++-13
-
+g++ --version
+# for some reason on Focal, we need this for setup.py to work:
+sudo apt install g++ # Installs 9.4.0
 
 # Activate the conda environment we prepared for torch building
 conda activate conda-env-torch-build-py310
@@ -1315,7 +1320,8 @@ conda install intel::mkl-static intel::mkl-include
 pip install -r requirements.txt # still clean
 
 # described as optional, but I did it. 
-# Installs pytorch-triton in conda site-packages
+# Installs pytorch-triton in conda-env-torch-build-py310 site-packages
+sudo apt install make
 make triton
 
 #Looking in indexes: https://download.pytorch.org/whl/nightly/
@@ -1513,6 +1519,13 @@ ALSO DID:
 sudo modprobe amdgpu vramlimit=0 # REBOOT
 # later: sudo modprobe amdgpu ppfeaturemask=0xfff73fff
 
+* Downgrade jammy to focal
 
+follow https://askubuntu.com/questions/49869/how-to-roll-back-ubuntu-to-a-previous-version
+
+- edit sudo vi /etc/apt/sources.list, substitute jammy to focal
+- sudo vi preferences.d/ubuntu-pro-esm-* change a=focal, priority 1001
+- apt-get -fyu upgrade --allow-downgrades
+- sudo apt autoremove
   
 
