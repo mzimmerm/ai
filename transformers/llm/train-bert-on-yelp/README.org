@@ -916,7 +916,7 @@ sudo apt install "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)"
 sudo usermod -a -G render,video $LOGNAME
 wget https://repo.radeon.com/amdgpu-install/6.0.2/ubuntu/${UBUNTU_RELEASE}/amdgpu-install_6.0.60002-1_all.deb
 sudo apt install ./amdgpu-install_6.0.60002-1_all.deb
-sudo apt update
+sudo apt update --allow-insecure-repositories
 sudo apt install amdgpu-dkms
 sudo apt install rocm
 echo "Please reboot system for all settings to take effect."
@@ -1026,7 +1026,7 @@ pip install --force-reinstall --pre torch torchvision  $TORCH_ROCM_WHL_URL
 Pyenv is not available in the official Ubuntu package repository. However, you can install it manually12345. Here are the steps:
 
 Install and Update Dependencies Start by updating system packages:
-sudo apt update -y
+sudo apt update --allow-insecure-repositories -y
 Then, install all of Pyenv’s dependencies:
 
 sudo apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python3-openssl git
@@ -1089,34 +1089,33 @@ UBUNTU_RELEASE=focal # jammy is 22.04 focal is 20.04
 		
 #ROCM_VERSION_6060002=5.7.50703-1
 #ROCM_VERSION_602=5.7.3
+#AMDGPU_VERSION_602=$ROCM_VERSION_602
 #ROCM_VERSION_60=5.7
 
 #ROCM_VERSION_6060002=6.0.60002-1
 #ROCM_VERSION_602=6.0.2
+#AMDGPU_VERSION_602=$ROCM_VERSION_602
 #ROCM_VERSION_60=6.0
 
 # v4 have different naming conventions.
 # Need to install Ubuntu 20.04.6 LTS Focal Fossa Changes March 23, 2023
 # amdgpu-install_21.40.2.40502-1_all.deb
-ROCM_VERSION_6060002=40502-1 #  
-ROCM_VERSION_602=21.40.2
+ROCM_VERSION_6060002=21.40.2.40502-1 #  amdgpu-install_21.40.2.40502-1_all.deb  
+ROCM_VERSION_602=4.5.2
+AMDGPU_VERSION_602=21.40.2
 ROCM_VERSION_60=4.5 # this is torch, does not exist, will do manual
-
 # 4. Add repositories
 
-# amdgpu repo for jammy - should use latest, not ${ROCM_VERSION_602}
-# see https://github.com/nktice/AMD-AI - NO NO LUCK
-
-echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/${ROCM_VERSION_602}/ubuntu ${UBUNTU_RELEASE} main" \
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/amdgpu/${AMDGPU_VERSION_602}/ubuntu ${UBUNTU_RELEASE} main" \
     | sudo tee /etc/apt/sources.list.d/amdgpu.list
-sudo apt update -y 
+sudo apt update --allow-insecure-repositories -y 
 
 # ROCm repository
 echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${ROCM_VERSION_602} ${UBUNTU_RELEASE} main" \
     | sudo tee --append /etc/apt/sources.list.d/rocm.list
 echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' \
     | sudo tee /etc/apt/preferences.d/rocm-pin-600
-sudo apt update -y
+sudo apt update --allow-insecure-repositories -y
 
 
 # Check enabled repositories
@@ -1128,19 +1127,18 @@ sudo apt install "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)"
 sudo usermod -a -G render,video $LOGNAME
 
 AMDGPU_ROCM_PACKAGE_FILE=amdgpu-install_${ROCM_VERSION_6060002}_all.deb
-AMDGPU_ROCM_PACKAGE_URL=https://repo.radeon.com/amdgpu-install/${ROCM_VERSION_602}/ubuntu/${UBUNTU_RELEASE}/${AMDGPU_ROCM_PACKAGE_FILE}
+AMDGPU_ROCM_PACKAGE_URL=https://repo.radeon.com/amdgpu-install/${AMDGPU_VERSION_602}/ubuntu/${UBUNTU_RELEASE}/${AMDGPU_ROCM_PACKAGE_FILE}
 wget ${AMDGPU_ROCM_PACKAGE_URL}
 
-#wget https://repo.radeon.com/amdgpu-install/6.0.2/ubuntu/${UBUNTU_RELEASE}/amdgpu-install_6.0.60002-1_all.deb
-#wget https://repo.radeon.com/amdgpu-install/5.7.3/ubuntu/${UBUNTU_RELEASE}/amdgpu-install_5.7.50703-1_all.deb
+# Ex: wget https://repo.radeon.com/amdgpu-install/6.0.2/ubuntu/${UBUNTU_RELEASE}/amdgpu-install_6.0.60002-1_all.deb
+# Ex: wget https://repo.radeon.com/amdgpu-install/21.40.2/ubuntu/${UBUNTU_RELEASE}/amdgpu-install_21.40.2.40502-1_all.deb
 
 
 # Install ROCm using amd install.
-# Should work now when packages added.
-# sudo zypper --no-gpg-checks install $AMDGPU_ROCM_PACKAGE_URL
- sudo apt install --yes ./$AMDGPU_ROCM_PACKAGE_FILE
-#sudo apt install ./amdgpu-install_5.7.50703-1_all.deb
-sudo apt update
+sudo apt update --allow-insecure-repositories
+sudo apt install --yes ./$AMDGPU_ROCM_PACKAGE_FILE
+# Ex: sudo apt install --yes ./amdgpu-install_5.7.50703-1_all.deb
+sudo apt update --allow-insecure-repositories
 
 # 6. Install amdgpu-dkms and rocm
 sudo apt install --yes amdgpu-dkms
