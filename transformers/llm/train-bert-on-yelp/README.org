@@ -1526,4 +1526,34 @@ follow https://askubuntu.com/questions/49869/how-to-roll-back-ubuntu-to-a-previo
 - apt-get -fyu upgrade --allow-downgrades
 - sudo apt autoremove
   
+* Downgrade Ubuntu focal kernel to 5.6. Needed to install amdgpu 21.40.2. DO NOT DO THIS IF YOU CANNOT AFFORD TO BREAK YOUR SYSTEM BEYOND REPAIR.
+
+# Using this link: https://askubuntu.com/questions/1404722/downgrade-kernel-for-ubuntu-22-04-lts
+
+wget https://raw.githubusercontent.com/pimlie/ubuntu-mainline-kernel.sh/master/ubuntu-mainline-kernel.sh
+chmod +x ubuntu-mainline-kernel.sh
+
+# search and find your wanted version
+ubuntu-mainline-kernel.sh -r | grep 5.6
+
+# install that version kernel selected from the above list
+sudo ./ubuntu-mainline-kernel.sh -i v5.6.19
+
+
+
+# get all menuentries
+sudo grep 'menuentry \|submenu ' /boot/grub/grub.cfg | cut -f2 -d "'"
+
+# select the latest oem kernel, 5.6.0-1056-oem in my case
+# change the grub configuration
+sudo vi /etc/default/grub
+from: GRUB_DEFAULT=0
+to: GRUB_DEFAULT="Advanced options for Ubuntu>Ubuntu, with Linux 5.6.0-1056-oem"
+
+# update grub
+sudo update-grub
+
+# reboot
+sudo reboot now
+
 
